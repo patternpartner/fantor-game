@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="icon" href="data:,">
+<title>Fantor · The Wanderer's Light</title>
+<style>
+html,body{margin:0;height:100%;background:#000;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+canvas#game{background:#000;display:block;image-rendering:auto;filter:saturate(1.06) contrast(1.02)}
+#touch{position:fixed;inset:0;pointer-events:none;display:none}
+#touch.on{display:block}
+.tb{position:absolute;pointer-events:auto;width:clamp(56px,13vmin,92px);height:clamp(56px,13vmin,92px);border-radius:50%;
+ background:radial-gradient(circle at 50% 40%,rgba(255,220,160,.22),rgba(60,30,15,.25));border:2px solid rgba(255,210,150,.35);
+ color:rgba(255,230,190,.85);font:700 clamp(20px,5vmin,32px)/1 Georgia,serif;display:flex;align-items:center;justify-content:center;
+ backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
+.tb.down{background:radial-gradient(circle at 50% 40%,rgba(255,230,170,.55),rgba(120,60,20,.4))}
+#bl{left:calc(env(safe-area-inset-left) + 3vmin);bottom:calc(env(safe-area-inset-bottom) + 4vmin)}
+#br{left:calc(env(safe-area-inset-left) + 3vmin + clamp(64px,15vmin,104px));bottom:calc(env(safe-area-inset-bottom) + 4vmin)}
+#bj{right:calc(env(safe-area-inset-right) + 3vmin + clamp(64px,15vmin,104px));bottom:calc(env(safe-area-inset-bottom) + 4vmin)}
+#bs{right:calc(env(safe-area-inset-right) + 3vmin);bottom:calc(env(safe-area-inset-bottom) + 9vmin)}
+#bu{right:calc(env(safe-area-inset-right) + 3vmin + clamp(64px,15vmin,104px));bottom:calc(env(safe-area-inset-bottom) + 4vmin + clamp(64px,15vmin,104px));display:none}
+#rot{position:fixed;inset:auto 0 12px 0;text-align:center;color:#e9c493;font:14px Georgia,serif;opacity:.8;display:none;pointer-events:none}
+@media (orientation:portrait) and (pointer:coarse){#rot{display:block}}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="854" height="480"></canvas></div>
+<div id="touch">
+ <div class="tb" id="bl">◀</div><div class="tb" id="br">▶</div>
+ <div class="tb" id="bj">⤒</div><div class="tb" id="bs">✦</div><div class="tb" id="bu">▲</div>
+</div>
+<div id="rot">Turn your phone sideways for the full view</div>
+<script src="game.js"></script>
+</body>
+</html>
