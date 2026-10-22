@@ -19,13 +19,13 @@ Piper VCTK p237 at length-scale 1.45, then pitch 0.93 with formant shift, EQ, co
 
 | Area | Character in game | FAA ID | FAA title | Role |
 |---|---|---|---|---|
-| I The Shore of Wakes | The Smonster | 51138316 | Smonster | Rises from the shore. Lobs orbs and charges. 4 hits. |
-| II The Forest of Bent Trees | Yogi Yogs | 57424150 | Yogi yogs | Hovers. Aimed volleys, falling orbs, summons wisps. 5 hits. |
-| III The Silver River Road | The Battle Armour | 57416986 | Battle armour | Flies. Ring bursts, dive-charges, aimed shots. 5 hits. |
-| IV The Golden Kingdom | The Doig | 61563124 | Doig | Golden idol that stays put. Rings, falling orbs, ground shockwaves, lobs. 6 hits. |
-| V The Frygar Camp | Neco, Captain of the Frygars | 51526407 | Neco | Fast. Charges, lobs and shockwaves. 6 hits. |
-| VI Where the Old Things Watch | Vere | 63694699 | Vere | Floating head in the dark. Aimed shots, summons, rings, falling orbs. 6 hits. |
-| VII The Heart of Fantor | The King of Bell (final boss) | 58425236 | King of bell | Guards the throne. Shockwaves, lobs, charges, falling orbs. 8 hits. Kneels when calmed. |
+| I The Shore of Wakes | The Smonster | 51138316 | Smonster | Rises from the shore. Lobs orbs and charges. 5 hits. |
+| II The Forest of Bent Trees | Yogi Yogs | 57424150 | Yogi yogs | Hovers. Aimed volleys, falling orbs, summons wisps. 6 hits. |
+| III The Silver River Road | The Battle Armour | 57416986 | Battle armour | Flies. Ring bursts, dive-charges, aimed shots. 6 hits. |
+| IV The Golden Kingdom | The Doig | 61563124 | Doig | Golden idol that stays put. Rings, falling orbs, ground shockwaves, lobs. 7 hits. |
+| V The Frygar Camp | Neco, Captain of the Frygars | 51526407 | Neco | Fast. Charges, lobs and shockwaves. 7 hits. |
+| VI Where the Old Things Watch | Vere | 63694699 | Vere | Floating head in the dark. Aimed shots, summons, rings, falling orbs. 7 hits. |
+| VII The Heart of Fantor | The King of Bell (final boss) | 58425236 | King of bell | Guards the throne. Shockwaves, lobs, charges, falling orbs. 9 hits. Kneels when calmed. |
 
 ## Enemies
 
@@ -60,3 +60,17 @@ d01, d02 (after losing a life), x01 (extra life), go1 (game over), n01–n07 (fo
 bw1 (a boss is calmed), bw2 (the King of Bell kneels).
 
 Some names were spelled by sound for the speech engine and are shown correctly in the subtitles. "Doig" was read as "Doyg" and "Vere" as "Veer".
+
+## Backdrops for the hidden places (v3)
+
+Four more paintings from *Fantor's Long War* that weren't used anywhere else in the game. Each one is a
+full painting (the public ~900px image, cropped to 16:9), not a cut-out.
+
+| Used as | FAA ID | FAA title |
+|---|---|---|
+| Backdrop of hidden stage "Beneath the Pool" | 56560018 | Source error hire |
+| Backdrop of hidden stage "Above the Bent Wood" | 51189575 | The swottys |
+| Backdrop of hidden stage "What the River Remembers" | 57324815 | Not so important |
+| Scene shown in the secret ending | 60367235 | Ghulirs |
+
+New narrator lines in v3 (same p237 voice and processing): e1–e3, r1–r3, sx1.

@@ -25,10 +25,39 @@ canvas#game{background:#000;display:block;image-rendering:auto;filter:saturate(1
 #bu{right:calc(env(safe-area-inset-right) + 3vmin + clamp(64px,15vmin,104px));bottom:calc(env(safe-area-inset-bottom) + 4vmin + clamp(64px,15vmin,104px));display:none}
 #rot{position:fixed;inset:auto 0 12px 0;text-align:center;color:#e9c493;font:14px Georgia,serif;opacity:.8;display:none;pointer-events:none}
 @media (orientation:portrait) and (pointer:coarse){#rot{display:block}}
+#ui{position:fixed;top:6px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:5;opacity:.55;transition:opacity .2s}
+#ui:hover{opacity:1}
+#ui button,#menu button{font:600 14px Georgia,serif;color:#ffe6c0;background:rgba(30,16,8,.6);border:1px solid rgba(255,210,150,.45);border-radius:8px;cursor:pointer}
+#ui button{width:34px;height:30px;padding:0;line-height:1}
+body.clean #ui{display:none}
+#menu{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:10;background:rgba(0,0,0,.35)}
+#menu.on{display:flex}
+#menu .box{width:min(420px,90vw);max-height:92vh;overflow:auto;background:rgba(20,10,6,.92);border:1px solid rgba(255,210,150,.4);border-radius:12px;padding:16px 22px;color:#f4e2c4;font:15px Georgia,serif;box-shadow:0 0 40px rgba(255,160,60,.15)}
+#menu h2{margin:0 0 10px;font-weight:normal;letter-spacing:.2em;text-align:center;color:#ffe6c0}
+#menu label{display:grid;grid-template-columns:70px 1fr;align-items:center;gap:10px;margin:8px 0}
+#menu input[type=range]{width:100%;accent-color:#ffb860}
+#menu .keys{margin:12px 0 4px;font-size:13px;line-height:1.55;color:#e8d2b0;columns:2;column-gap:18px}
+#menu .keys b{color:#ffe0b0;font-weight:600}
+#menu .note{font-size:12px;color:#c9ad8a;text-align:center;margin:6px 0 10px}
+#menu .row{display:flex;gap:10px;justify-content:center}
+#menu .row button{padding:8px 16px}
+#menu button:focus-visible,#ui button:focus-visible{outline:2px solid #ffd08a}
+canvas#game:focus{outline:none}
 </style>
 </head>
 <body>
-<div id="wrap"><canvas id="game" width="854" height="480"></canvas></div>
+<div id="wrap"><canvas id="game" width="854" height="480" tabindex="0"></canvas></div>
+<div id="ui"><button id="b_menu" title="Menu (Esc)" aria-label="Menu">&#10073;&#10073;</button><button id="b_fs" title="Fullscreen (F)" aria-label="Fullscreen">&#x26F6;</button></div>
+<div id="menu" role="dialog" aria-label="Paused"><div class="box">
+ <h2>PAUSED</h2>
+ <label>Music <input type="range" id="m_music" min="0" max="100" step="5"></label>
+ <label>Voice <input type="range" id="m_voice" min="0" max="100" step="5"></label>
+ <label>Effects <input type="range" id="m_sfx" min="0" max="100" step="5"></label>
+ <div class="keys"><b>&larr; &rarr;</b> / <b>A D</b> walk<br><b>&uarr;</b> / <b>Space</b> / <b>W Z</b> jump<br><b>X</b> / <b>E K Shift</b> shine, offer light<br><b>Esc</b> / <b>P</b> this menu<br><b>F</b> fullscreen<br><b>Enter</b> start</div>
+ <div class="note">Three lives. No continues. Lose them all and it starts again from the shore.</div>
+ <div class="row"><button id="m_resume">Resume</button><button id="m_fs">Fullscreen</button></div>
+</div></div>
+
 <div id="touch">
  <div class="tb" id="bl">◀</div><div class="tb" id="br">▶</div>
  <div class="tb" id="bj">⤒</div><div class="tb" id="bs">✦</div><div class="tb" id="bu">▲</div>
