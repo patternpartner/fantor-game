@@ -1,4 +1,4 @@
-FANTOR - The Wanderer's Light (v3, itch.io edition)
+FANTOR - The Wanderer's Light (v3.1, itch.io edition)
 A punishing old-school platformer set in the world of "The Road to Fantor". Every character
 is cut from Eh AyeC's own paintings in the "Fantor's Long War" collection (see CHARACTERS.md).
 
@@ -35,7 +35,7 @@ Gather motes. Each stone needs a lot of light to wake, and a boss guards each on
 turn your light aside: dodge, and shine while they rest. Shining costs 3 light, with a short
 cooldown. Every hazard warns you before it hurts. Not every pool is what it seems.
 
-TESTING HOOKS
-  ?auto  autopilot    ?god  debug invincibility    ?area=N  start in area N (0-7)
-  ?mute  no sound     ?debug  position readout     ?clean  hide on-screen buttons
-  ?lowres  never render above 854x480              ?secrets  let the autopilot use hidden places
+URL OPTIONS
+  ?mute  no sound     ?lowres  never render above 854x480
+
+v3.1: debug/testing hooks removed from the public build; clearer sign in the first hidden place.
