@@ -1,4 +1,4 @@
-FANTOR - The Wanderer's Light (v3.1, itch.io edition)
+FANTOR - The Wanderer's Light (v4 "Learn it, beat it")
 A punishing old-school platformer set in the world of "The Road to Fantor". Every character
 is cut from Eh AyeC's own paintings in the "Fantor's Long War" collection (see CHARACTERS.md).
 
@@ -28,7 +28,8 @@ WHAT COSTS A LIFE
   - Getting hit while you carry no light. Light is your shield: enemy contact, thrown fire,
     spears, stingers, embers, vents and falling rocks take light first (bosses take 3).
   - Running dry in the dark: 0 light and no lit brazier near you for about 5 seconds.
-  You go back to the last checkpoint (area start, lit brazier, calmed boss, woken stone).
+  You go back to the start of the land (or, once its boss is calmed, to the boss's arena / the woken stone).
+  There are no checkpoints in the middle of a land. Braziers keep the dark away, nothing more.
 
 HOW TO PLAY
 Gather motes. Each stone needs a lot of light to wake, and a boss guards each one. Bosses
@@ -38,4 +39,13 @@ cooldown. Every hazard warns you before it hurts. Not every pool is what it seem
 URL OPTIONS
   ?mute  no sound     ?lowres  never render above 854x480
 
+v4 "Learn it, beat it":
+  - Every boss now has a second form (the King of Bell has a third). Each new form adds one attack
+    and gives you less time to strike.
+  - No more dice: boss and enemy attacks follow fixed patterns you can learn.
+  - Back on your feet in about a second after losing a life.
+  - The game-over screen shows where each light went out, and how close you came to the boss.
+  - Screen shake, hit-stop, new sounds for spears, stingers, rocks and vents, a death for each cause.
+  - The Land VI braziers no longer act as checkpoints, and the strategy pop-up tips are gone
+    (control prompts and the folk's words stay).
 v3.1: debug/testing hooks removed from the public build; clearer sign in the first hidden place.
