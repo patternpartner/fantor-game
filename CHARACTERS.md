@@ -1,6 +1,7 @@
 # Fantor: The Wanderer's Light — characters and where they came from
 
-Every painted character in the game is cut out of one of Eh AyeC's own paintings on Fine Art America
+Every character in the game is cut out of one of Eh AyeC's own images on Fine Art America (AI-generated images,
+created and curated by the artist)
 (profile: https://fineartamerica.com/profiles/ehayec). All 23 come from the Fantor collection, which is
 called **"Fantor's Long War"** on the site now (862 images; it was called "Battle for Fantor" in the older
 catalogue, and that's the collection the film used). It's the only Fantor-named collection on the profile.
@@ -8,7 +9,7 @@ catalogue, and that's the collection the film used). It's the only Fantor-named 
 How they were made: I downloaded the public ~900px "mediumlarge" image and cut the figure out with
 rembg (BiRefNet-general model). The faint haze was cleaned off, the image was cropped, and it was saved as a small WebP
 (`assets/img/c_<key>.webp`). The five "apparition" portraits (Whiskers and the four Key Holders) are the
-painting itself inside a soft oval mask, because they're close-up faces. Nothing was repainted. All the
+image itself inside a soft oval mask, because they're close-up faces. Nothing was drawn over or changed beyond that. All the
 movement is done in code: bobbing, squash and stretch, tilting, glowing, a wind-up before a throw, a flash
 when hit, and a golden fade when calmed.
 
@@ -63,8 +64,8 @@ Some names were spelled by sound for the speech engine and are shown correctly i
 
 ## Backdrops for the hidden places (v3)
 
-Four more paintings from *Fantor's Long War* that weren't used anywhere else in the game. Each one is a
-full painting (the public ~900px image, cropped to 16:9), not a cut-out.
+Four more images from *Fantor's Long War* that weren't used anywhere else in the game. Each one is a
+full image (the public ~900px image, cropped to 16:9), not a cut-out.
 
 | Used as | FAA ID | FAA title |
 |---|---|---|
@@ -77,7 +78,7 @@ New narrator lines in v3 (same p237 voice and processing): e1–e3, r1–r3, sx1
 
 ## Backdrops for the hidden places (v5)
 
-Four more full paintings from the same collection as the v3 backdrops, each cropped to 16:9. To keep them
+Four more full images from the same collection as the v3 backdrops, each cropped to 16:9. To keep them
 hidden, the table doesn't say where they are.
 
 | Used as | FAA ID | FAA title |

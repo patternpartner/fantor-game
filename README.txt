@@ -1,6 +1,7 @@
-FANTOR - The Wanderer's Light (v5 "New light")
-A punishing old-school platformer set in the world of "The Road to Fantor". Every character
-is cut from Eh AyeC's own paintings in the "Fantor's Long War" collection (see CHARACTERS.md).
+FANTOR - The Wanderer's Light (v6 "The Long Night")
+A punishing old-school platformer set in the world of "The Road to Fantor". Every backdrop and
+character comes from Eh AyeC's "Fantor's Long War" collection: AI-generated images, created and
+curated by the artist (see CHARACTERS.md). The code was written with an AI coding assistant.
 
 PLAY ONLINE
 https://patternpartner.github.io/fantor-game/
@@ -27,8 +28,8 @@ CONTROLS
   Mouse:    click the game first so it gets the keyboard (in an embed).
             The two small buttons at the top are Menu and Fullscreen.
   Phone (landscape): the on-screen buttons.
-  The pause menu has Music, Voice and Effects volume. Settings are remembered in
-  this browser (if the browser allows storage; if not, the game still runs).
+  The pause menu has Music, Voice and Effects volume, and a Timer switch. Settings and best times
+  are remembered in this browser (if the browser allows storage; if not, the game still runs).
 
 LIVES (old school, no mercy)
   3 lives. Lose them all and it's GAME OVER: no continues, and the journey starts again
@@ -41,8 +42,9 @@ WHAT COSTS A LIFE
   - Running dry in the dark: 0 light and no lit brazier near you for about 5 seconds.
   - The cold (Land VI): frost drinks light fast. At 0 light, it takes you in about a second and a half,
     unless you carry fire.
-  You go back to the start of the land (or, once its boss is calmed, to the boss's arena / the woken stone).
-  There are no checkpoints in the middle of a land. Braziers keep the dark away, nothing more.
+  You go back to the start of the act you are in (or, once its boss is calmed, to the boss's arena /
+  the woken stone). Every land is two acts. There are no checkpoints inside an act. Braziers keep the
+  dark away, nothing more.
 
 HOW TO PLAY
 Gather motes. Each stone needs a lot of light to wake, and a boss guards each one. Bosses
@@ -51,6 +53,29 @@ cooldown. Every hazard warns you before it hurts. Not every pool is what it seem
 
 URL OPTIONS
   ?mute  no sound     ?lowres  never render above 854x480
+
+THE LONG NIGHT
+  Finish the journey carrying everything the sea forgot, and the title screen offers The Long Night
+  (N, or tap the line on the title). It is the whole journey again, after dark.
+
+TIMER
+  Switch it on in the pause menu. It shows the run time (pauses do not count), a split as each land
+  ends, and how it compares with your best run. Best times are kept in this browser, one for the
+  journey and one for the Long Night.
+
+v6 "The Long Night":
+  - Every land is now two acts. Act 2 is a level start: lose a life in it and you begin Act 2 again;
+    lose them all and it is the shore. Act 1's shadows stay behind in Act 1.
+  - Each land ends on a new stretch before its boss: a short, dense test of that land's own idea
+    (the shore gets a whole new second act).
+  - The Long Night: a second journey, earned. Night falls on all seven lands, every stone's gift is
+    yours from the first step, shadows take one more shine, the hazards keep a quicker beat, every
+    boss begins in its second form, the stones want more light, a new life takes 100 motes, and the
+    hidden places sleep. Three lives, no continues. It has its own ending.
+  - An optional run timer with land splits and best times.
+  - Two new narrator lines.
+  - A journey is now about 14 to 20 minutes for a good player (the autopilot, which never hesitates,
+    takes about 11.5).
 
 v5 "New light":
   - Every stone now gives back a move, and the next land is built to teach it: a safe place to try it,
