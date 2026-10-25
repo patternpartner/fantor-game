@@ -1,4 +1,4 @@
-FANTOR - The Wanderer's Light (v8 "Living Bosses")
+FANTOR - The Wanderer's Light (v9 "Second Look")
 A punishing old-school platformer set in the world of "The Road to Fantor". Every backdrop and
 character comes from Eh AyeC's "Fantor's Long War" collection: AI-generated images, created and
 curated by the artist (see CHARACTERS.md). The code was written with an AI coding assistant.
@@ -28,7 +28,7 @@ CONTROLS
   Mouse:    click the game first so it gets the keyboard (in an embed).
             The two small buttons at the top are Menu and Fullscreen.
   Phone (landscape): the on-screen buttons.
-  The pause menu has Music, Voice and Effects volume, and a Timer switch. Settings and best times
+  The pause menu has Music, Voice and Effects volume, a Timer switch, and Graphics (Auto, Full, or Light for slow machines). Settings and best times
   are remembered in this browser (if the browser allows storage; if not, the game still runs).
 
 LIVES (old school, no mercy)
@@ -65,6 +65,26 @@ TIMER
   Switch it on in the pause menu. It shows the run time (pauses do not count), a split as each land
   ends, and how it compares with your best run. Best times are kept in this browser, one for the
   journey and one for the Long Night.
+
+v9 "Second Look":
+  - The shore (Land I) teaches one thing at a time: a rock, a pit, then a lone wisp (the shine hint now shows
+    just before it), then a Gorit on open ground, then the tide, then Hey Honey, then the log. Act 2 puts them
+    together. The log now carries you a little nearer the far bank.
+  - The Long Night rebuilds new stretches in Lands III to VII (I and II were rebuilt in v7): a wide sinking
+    crossing you light-dash over, a lantern chasm behind a watchman, a vent corridor that rolls like a wave
+    under a catapult, a cold walk between two watching eyes, and a chasm of swinging and tolling bells.
+  - Two spots where nearly every test death fell just short were eased a little: the shore's log carries
+    you nearer the far bank, and the windblown lantern chasm in the golden city has its far bank 15 px nearer,
+    with three motes before its gate, so a restart at Act 2 is never left without the light it needs.
+    Still three lives, no continues, no checkpoints inside an act, the same knockback.
+  - Faster drawing: the glow and bloom are worked out at half size, and motes use one baked glow. Pause menu:
+    Graphics Auto / Full / Light. Light drops the bloom, the drifting motes in the air and the bosses' glow
+    for slow machines. Auto switches to Light by itself if the game is running slowly.
+  - The Smonster is a deeper tone with a dark edge, so it no longer melts into the bright shore sky.
+    The wanderer leans a touch into a run.
+  - Sound: Act 1 music is warm and a little veiled, Act 2 opens up, with a slow heartbeat under it (not in
+    boss fights). The music ducks under a hit and a stone waking. Footsteps are a little quieter.
+  - The art is the same AI-generated collection as before: nothing new was generated for v9.
 
 v8 "Living Bosses":
   - The seven bosses move like living things. Each is still the same single AI-generated image, but the game
