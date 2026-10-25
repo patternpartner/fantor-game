@@ -74,3 +74,17 @@ full painting (the public ~900px image, cropped to 16:9), not a cut-out.
 | Scene shown in the secret ending | 60367235 | Ghulirs |
 
 New narrator lines in v3 (same p237 voice and processing): e1–e3, r1–r3, sx1.
+
+## Backdrops for the hidden places (v5)
+
+Four more full paintings from the same collection as the v3 backdrops, each cropped to 16:9. To keep them
+hidden, the table doesn't say where they are.
+
+| Used as | FAA ID | FAA title |
+|---|---|---|
+| Backdrop of a hidden place | 58384739 | Blackout |
+| Backdrop of a hidden place | 61529149 | Gozzies |
+| Backdrop of a hidden place | 57892881 | Reverse |
+| Backdrop of a hidden place | 51192624 | Stationers |
+
+New narrator lines in v5 (same p237 voice and processing): e4–e7, r4–r7, gv1. r3 and sx1 were re-recorded.
