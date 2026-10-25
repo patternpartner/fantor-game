@@ -1,4 +1,4 @@
-FANTOR - The Wanderer's Light (v7 "Long Night, Remade")
+FANTOR - The Wanderer's Light (v8 "Living Bosses")
 A punishing old-school platformer set in the world of "The Road to Fantor". Every backdrop and
 character comes from Eh AyeC's "Fantor's Long War" collection: AI-generated images, created and
 curated by the artist (see CHARACTERS.md). The code was written with an AI coding assistant.
@@ -65,6 +65,18 @@ TIMER
   Switch it on in the pause menu. It shows the run time (pauses do not count), a split as each land
   ends, and how it compares with your best run. Best times are kept in this browser, one for the
   journey and one for the Long Night.
+
+v8 "Living Bosses":
+  - The seven bosses move like living things. Each is still the same single AI-generated image, but the game
+    now draws it as a puppet, cut into thin bands in code: it breathes, bends into its movement and sways
+    after it, crouches and draws light in before it strikes, snaps through the attack, staggers back when
+    your light hits it, shudders and flares through its change of form, rises out of the ground in dust,
+    and comes apart into light when it is calmed. Their eyes burn brighter as they gather an attack.
+    Hair, cloth, chains, wings and tendrils hang off them and trail behind their movement (drawn by the
+    game in code, not new art). The straight cropped edges some cut-outs had are faded out.
+  - Nothing about how they fight changed: same attacks, same timings, same hitboxes, same patterns.
+  - On the shore (Land I) Act 2 now simply carries on: no dip to black and no Act 2 card (the shore's
+    opening card no longer says "Act 1" either). Act 2 still works the same, including where you restart.
 
 v7 "Long Night, Remade":
   - The Long Night's lands are remixed: in each land, one to three stretches are rebuilt at night
