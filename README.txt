@@ -1,4 +1,4 @@
-FANTOR - The Wanderer's Light (v6 "The Long Night")
+FANTOR - The Wanderer's Light (v7 "Long Night, Remade")
 A punishing old-school platformer set in the world of "The Road to Fantor". Every backdrop and
 character comes from Eh AyeC's "Fantor's Long War" collection: AI-generated images, created and
 curated by the artist (see CHARACTERS.md). The code was written with an AI coding assistant.
@@ -50,18 +50,43 @@ HOW TO PLAY
 Gather motes. Each stone needs a lot of light to wake, and a boss guards each one. Bosses
 turn your light aside: dodge, and shine while they rest. Shining costs 3 light, with a short
 cooldown. Every hazard warns you before it hurts. Not every pool is what it seems.
+The light you carry builds up as you gather it: you burn brighter, see further in the dark, and a
+shine reaches further (it keeps growing up to 30 light). Spend it, and you dim again.
 
 URL OPTIONS
   ?mute  no sound     ?lowres  never render above 854x480
 
 THE LONG NIGHT
   Finish the journey carrying everything the sea forgot, and the title screen offers The Long Night
-  (N, or tap the line on the title). It is the whole journey again, after dark.
+  (N, or tap the line on the title). It is the whole journey again, after dark, and the night has
+  rebuilt part of every land around the stones' gifts. Some things only show at night.
 
 TIMER
   Switch it on in the pause menu. It shows the run time (pauses do not count), a split as each land
   ends, and how it compares with your best run. Best times are kept in this browser, one for the
   journey and one for the Long Night.
+
+v7 "Long Night, Remade":
+  - The Long Night's lands are remixed: in each land, one to three stretches are rebuilt at night
+    around the moves (leaps that need the ebb-step, a lantern chain in the bent wood, guards in the
+    golden city, a third catapult, a longer frost with a new eye, swinging and tolling bells).
+  - The night hides three new places in the first three lands, for those who look. One try each.
+  - Tide flats on the shore: the sea creeps up over them on a fixed beat (you hear it first).
+  - Guards in the golden city: a Keepaway on watch whose lantern looks one way, then the other.
+    It shifts before it turns. If its light finds you, it calls fire down where you stood.
+  - Your light builds up: a bigger, brighter glow and a longer reach the more you carry, small lights
+    circling you as it grows, and a ring by the light counter that fills toward your next life.
+  - Better rendering: soft coloured light from lanterns, braziers, fire, vents and bells, a gentle
+    bloom, contact shadows, a scarf of light on the wanderer, slow light shafts by day, low mist in
+    the dark lands. The images themselves are the same AI-generated images as before.
+  - Act 2 has its own mood: the music plays a touch higher and quicker, and the light closes in.
+  - Three new narrator lines for the night's hidden places, their riddles, and the night's last word.
+  - Lose a life in Act 2 and you still start Act 2 again (unchanged from v6).
+  - How long is a run? Measured, not guessed: the autopilot, which never hesitates, takes about 12.7
+    minutes of play for the journey. A second autopilot that stops to look for most of a second before
+    every new gap, tide, hazard and creature takes about 12.5 minutes for the first six lands, so a
+    flawless, careful journey is about 15 to 16 minutes. Real first journeys, with deaths and
+    restarts, will be longer; nobody has timed one yet.
 
 v6 "The Long Night":
   - Every land is now two acts. Act 2 is a level start: lose a life in it and you begin Act 2 again;
