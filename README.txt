@@ -1,4 +1,4 @@
-FANTOR - The Wanderer's Light (v9 "Second Look")
+FANTOR - The Wanderer's Light (v10 "Keepsakes")
 A punishing old-school platformer set in the world of "The Road to Fantor". Every backdrop and
 character comes from Eh AyeC's "Fantor's Long War" collection: AI-generated images, created and
 curated by the artist (see CHARACTERS.md). The code was written with an AI coding assistant.
@@ -65,6 +65,21 @@ TIMER
   Switch it on in the pause menu. It shows the run time (pauses do not count), a split as each land
   ends, and how it compares with your best run. Best times are kept in this browser, one for the
   journey and one for the Long Night.
+
+v10 "Keepsakes":
+  - A quiet record, kept in this browser: the title screen shows how many journeys you have begun and the
+    furthest your light has gone (and the same for the Long Night, once you have one). It is a record, not a hint.
+  - The game-over screen marks where your light had got to before this run, on the strip of the seven lands,
+    says so when a run goes further than ever before, and counts the journeys begun.
+  - The paintings are not quite still: they breathe very slowly, once in each act the layers of the painting
+    drift apart and back, and the painting opens up when a stone wakes or an old power is calmed. Only the
+    backdrop moves; nothing over the play changes.
+  - When a hit takes light, the light it takes breaks off you in shards (more shards for a bigger hit).
+  - The ending now rolls honest credits over the last painting: the art is AI-generated images from Eh AyeC's
+    "Fantor's Long War" collection, created and curated by the artist; the voice is a synthetic narrator;
+    the music is AI-assisted; the code was written with an AI coding assistant. Then the run's card returns.
+  - Nothing about the difficulty changed: three lives, no continues, no checkpoints inside an act, the same
+    knockback, pits included. The art is the same AI-generated collection: nothing new was generated for v10.
 
 v9 "Second Look":
   - The shore (Land I) teaches one thing at a time: a rock, a pit, then a lone wisp (the shine hint now shows
