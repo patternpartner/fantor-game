@@ -1,4 +1,4 @@
-FANTOR - The Wanderer's Light (v10 "Keepsakes")
+FANTOR - The Wanderer's Light (v11 "Ember")
 A punishing old-school platformer set in the world of "The Road to Fantor". Every backdrop and
 character comes from Eh AyeC's "Fantor's Long War" collection: AI-generated images, created and
 curated by the artist (see CHARACTERS.md). The code was written with an AI coding assistant.
@@ -65,6 +65,34 @@ TIMER
   Switch it on in the pause menu. It shows the run time (pauses do not count), a split as each land
   ends, and how it compares with your best run. Best times are kept in this browser, one for the
   journey and one for the Long Night.
+
+THE EMBER RUN
+  Reach the journey's end once (or open the Long Night), and the title offers the Ember Run (R, or tap the
+  line on the title). It is the same journey with one light: one life, and motes never give another.
+  It keeps its own record of runs begun and the furthest it has gone. The journey and the Long Night are unchanged.
+
+WHERE THE LIGHT HAS GONE OUT
+  Press M on the title (or tap the line at the top right) to see, for each land, how many times the light has
+  gone out there across every journey kept in this browser, by day and by night. The game-over strip shows the
+  same counts above each land. It is a record, not advice.
+
+KEEP THIS CARD
+  On the game-over and end screens, press G (or tap the line at the bottom right) to save a PNG card of the run:
+  journeys, furthest, where the light has gone out, and a small honest credit. If your browser or the embed does not
+  allow the download, press G again within a few seconds and it opens in a new tab instead.
+
+v11 "Ember":
+  - Where the light has gone out: a lifetime count of deaths in each of the seven lands (and Dusk), by day and by
+    night, kept in this browser. M on the title opens it; the game-over strip shows the counts above each land.
+  - The narrator notices returning wanderers: eight new short lines (same synthetic Piper p237 narrator voice and
+    the same processing as the rest of the narration), on the 5th, 10th, 25th and 50th journey begun, on the 3rd,
+    10th and 25th time the light goes out in the same land, and on the first Ember Run. They acknowledge; they never advise.
+  - The Ember Run: after the journey's end has been reached once, an opt-in run with one life and no extra lives
+    from motes, with its own record line on the title. Its times do not replace the journey's best time.
+  - Keep this card: a PNG of the run's stats card from the game-over and end screens, with the credit
+    "AI-generated art, created and curated by Eh AyeC" and the game's itch.io address.
+  - Nothing about the difficulty changed: three lives, no continues, no checkpoints inside an act, the same
+    knockback, pits included. No new images were generated for v11.
 
 v10 "Keepsakes":
   - A quiet record, kept in this browser: the title screen shows how many journeys you have begun and the
