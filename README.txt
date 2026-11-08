@@ -1,4 +1,4 @@
-FANTOR - The Wanderer's Light (v11 "Ember")
+FANTOR - The Wanderer's Light (v11.1 "Ember")
 A punishing old-school platformer set in the world of "The Road to Fantor". Every backdrop and
 character comes from Eh AyeC's "Fantor's Long War" collection: AI-generated images, created and
 curated by the artist (see CHARACTERS.md). The code was written with an AI coding assistant.
@@ -10,6 +10,13 @@ HOW TO RUN LOCALLY
 Browsers block games opened straight from a file, so serve the folder:
   python3 -m http.server 8000     (in this folder)
 then open http://localhost:8000/ . It also works from any static web host or itch.io.
+
+The file the page loads is game.js (minified, no debug hooks). The source it is built from
+is src/game.js, still one file, plain canvas and WebAudio. To rebuild after editing the source:
+  npm install
+  npm run build          (node tools/build.js)
+  npm test               (needs Chrome; checks the labels, the death marks, the shore painting,
+                          the card tap, and that lives, knockback and saved records are unchanged)
 
 CONTROLS
   Keyboard: Left/Right or A/D walk; Up, W, Space or Z jump; X, E, K or Shift shine
@@ -73,13 +80,29 @@ THE EMBER RUN
 
 WHERE THE LIGHT HAS GONE OUT
   Press M on the title (or tap the line at the top right) to see, for each land, how many times the light has
-  gone out there across every journey kept in this browser, by day and by night. The game-over strip shows the
-  same counts above each land. It is a record, not advice.
+  gone out there across every journey kept in this browser, by day and by night. The line under the title is
+  how many journeys were kept. Each land's number is a time the light went out, not a journey. The game-over
+  strip shows the same counts above each land, labeled "lights out". "Journeys begun" below is how many times
+  this kind of journey was started. It is a record, not advice.
+  Marks for this run sit where the light went out. Several in the same place are one mark with a count.
 
 KEEP THIS CARD
   On the game-over and end screens, press G (or tap the line at the bottom right) to save a PNG card of the run:
-  journeys, furthest, where the light has gone out, and a small honest credit. If your browser or the embed does not
-  allow the download, press G again within a few seconds and it opens in a new tab instead.
+  journeys, furthest, where the light has gone out, and a small honest credit. On a phone the line says to tap it.
+  The walking buttons step aside on those screens so the tap can land. If your browser or the embed does not
+  allow the download, press G (or tap) again within a few seconds and it opens in a new tab instead.
+
+v11.1 (readability on Ember, nothing else):
+  - The number above a land is how many times the light has gone out there. It is labeled "lights out".
+    "Journeys begun" remains the number of times a journey was started. The map says the same, in two lines.
+  - The list on the game-over card says "was struck" when a blow took the light.
+  - Several losses in one place are one mark with a count, still on that place.
+  - The painting behind the shore's first pool stays put until you have landed, so the bank can be read.
+  - While a hit flashes the body, a faint outline of the wanderer stays, so a large figure cannot hide them.
+  - The phone prompt to keep the card was already there. The play buttons no longer cover it.
+  - No new narration, no new images, and nothing about the difficulty changed: three lives, no continues,
+    no checkpoints inside an act, the same knockback, pits included. The Ember Run is still one life, opt-in,
+    after the journey's end. Records kept in this browser are read as before.
 
 v11 "Ember":
   - Where the light has gone out: a lifetime count of deaths in each of the seven lands (and Dusk), by day and by
