@@ -2331,32 +2331,45 @@ function text(t,x,y,size,col,align='center',alpha=1){
   cx.shadowColor='rgba(0,0,0,0.85)'; cx.shadowBlur=6; cx.fillStyle=col; cx.fillText(t,x,y); cx.restore();
 }
 function wrap(t,maxW,size){ cx.font=`${size}px Georgia, serif`; const words=t.split(' '), lines=[]; let cur=''; for(const w of words){ const tt=cur?cur+' '+w:w; if(cx.measureText(tt).width>maxW&&cur){ lines.push(cur); cur=w; } else cur=tt; } if(cur) lines.push(cur); return lines; }
-function drawStar(x,y,a){ cx.save(); cx.translate(x,y); cx.globalAlpha=a; cx.fillStyle='#ffe7b8'; cx.beginPath();
-  for(let k=0;k<8;k++){ const ang=k/8*TAU-Math.PI/2, r=k%2?2.1:5.2; cx.lineTo(Math.cos(ang)*r,Math.sin(ang)*r); }
-  cx.closePath(); cx.fill(); cx.restore(); }
+function inkWash(x,y,w,h){ const r=Math.min(16,h*0.4); cx.save(); cx.fillStyle='rgba(14,6,2,0.72)'; cx.beginPath();
+  cx.moveTo(x+r,y); cx.arcTo(x+w,y,x+w,y+h,r); cx.arcTo(x+w,y+h,x,y+h,r); cx.arcTo(x,y+h,x,y,r); cx.arcTo(x,y,x+w,y,r); cx.closePath(); cx.fill(); cx.restore(); }
+function drawStar(x,y,R,a,col){ cx.save(); cx.translate(x,y); cx.globalAlpha=a; cx.lineJoin='round'; cx.beginPath();
+  for(let k=0;k<8;k++){ const ang=k/8*TAU-Math.PI/2, r=k%2?R*0.42:R; cx.lineTo(Math.cos(ang)*r,Math.sin(ang)*r); }
+  cx.closePath(); cx.lineWidth=3; cx.strokeStyle='rgba(12,4,1,0.95)'; cx.stroke(); cx.fillStyle=col; cx.fill(); cx.restore(); }
 function drawHUD(){
-  const n=P.light; const x0=24,y0=26;
-  const shines=Math.floor(Math.max(0,n)/SHINE_COST), rem=((n%SHINE_COST)+SHINE_COST)%SHINE_COST;
+  const n=Math.max(0,P.light); const x0=32,y0=46;
+  const shines=Math.floor(n/SHINE_COST), rem=n%SHINE_COST;
   const danger=n<=0, thin=!danger&&n<SHINE_COST; // 0: the next hit takes a life. 1–2: no shine, one hit from empty.
+  const beat=0.62+0.38*Math.abs(Math.sin(game.t*2.6)); // a slow pulse, never blinking out
   if(game.areaI<7||A.d.secret){
+    const shown=Math.min(shines,5), starR=9, gap=22, extra=shines>5?36:0;
+    const rowW=Math.max(64,(shown||1)*gap+extra);
+    inkWash(x0+16,8,rowW+36,92); // a soft dark wash so the count reads on a bright painting
     cx.save(); cx.globalCompositeOperation='lighter';
-    const pulse=danger?(0.45+0.55*Math.abs(Math.sin(game.t*5))):1;
-    const r=7+Math.min(Math.max(0,n),LIGHT_CAP)*0.3; const g=cx.createRadialGradient(x0,y0,0,x0,y0,r*2.4);
-    const hot=danger?'190,60,40':thin?'220,120,70':'255,190,90';
-    g.addColorStop(0,n>0?`rgba(255,240,200,${pulse})`:`rgba(140,40,30,${0.5+0.4*pulse})`);
-    g.addColorStop(0.35,`rgba(${hot},${(n>0?0.75:0.4)*pulse})`); g.addColorStop(1,'rgba(255,120,30,0)');
-    cx.fillStyle=g; cx.beginPath(); cx.arc(x0,y0,r*2.4,0,TAU); cx.fill();
-    cx.restore();
-    if(danger){ cx.strokeStyle=`rgba(255,130,90,${0.35+0.45*Math.abs(Math.sin(game.t*5))})`; cx.lineWidth=1.6; cx.beginPath(); cx.arc(x0,y0,16,0,TAU); cx.stroke(); }
-    const fr=game.ember?0:game.lifeMotes/lifeNeed(); cx.strokeStyle='rgba(255,220,160,0.18)'; cx.lineWidth=2; cx.beginPath(); cx.arc(x0,y0,15,0,TAU); cx.stroke(); cx.strokeStyle='rgba(255,226,170,0.75)'; cx.beginPath(); cx.arc(x0,y0,15,-Math.PI/2,-Math.PI/2+TAU*fr); cx.stroke(); // v7: the ring fills toward a new life
-    text(String(Math.max(0,n)),x0+28,y0-4,18,danger?'#ffb0a0':thin?'#ffc8a0':'#ffe6b8','left',0.95);
-    // v11.2: stars are shines the light you carry will buy. Three seeds fill into the next one.
-    const shown=Math.min(shines,5), sx=x0+30, sy=y0+13;
-    if(!shines) drawStar(sx+4,sy,danger?0.22+0.16*Math.abs(Math.sin(game.t*5)):0.32);
-    for(let i=0;i<shown;i++) drawStar(sx+4+i*13,sy,0.95);
-    if(shines>5) text(String(shines),sx+shown*13+2,sy,11,'#ffe6b8','left',0.9);
-    for(let i=0;i<SHINE_COST;i++){ cx.beginPath(); cx.arc(sx+4+i*8,sy+12,1.7,0,TAU); cx.fillStyle=i<rem?'rgba(255,230,180,0.95)':'rgba(255,220,170,0.38)'; cx.fill(); }
-    if(A.shrine&&!A.shrine.awake) text(`the stone ahead wants ${A.shrine.need}`,x0+28,y0+40,12,'rgba(255,220,180,0.65)','left',0.85);
+    const glow=danger?30:22+Math.min(n,LIGHT_CAP)*0.35;
+    const g=cx.createRadialGradient(x0,y0,0,x0,y0,glow);
+    const hot=danger?'255,50,30':thin?'255,140,50':'255,200,110';
+    g.addColorStop(0,`rgba(255,245,220,${danger?beat:1})`); g.addColorStop(0.45,`rgba(${hot},${danger?0.9*beat:0.8})`); g.addColorStop(1,'rgba(255,80,20,0)');
+    cx.fillStyle=g; cx.beginPath(); cx.arc(x0,y0,glow,0,TAU); cx.fill(); cx.restore();
+    cx.fillStyle=danger?`rgba(255,48,28,${0.75+0.25*beat})`:thin?'#ffb15a':'#fff6dc';
+    cx.beginPath(); cx.arc(x0,y0,12,0,TAU); cx.fill();
+    const fr=game.ember?0:game.lifeMotes/lifeNeed(); cx.strokeStyle='rgba(255,220,160,0.28)'; cx.lineWidth=3; cx.beginPath(); cx.arc(x0,y0,20,0,TAU); cx.stroke(); cx.strokeStyle='rgba(255,236,190,0.95)'; cx.beginPath(); cx.arc(x0,y0,20,-Math.PI/2,-Math.PI/2+TAU*fr); cx.stroke(); // v7: the ring fills toward a new life
+    if(danger){ cx.strokeStyle=`rgba(255,64,36,${0.5+0.5*beat})`; cx.lineWidth=4; cx.beginPath(); cx.arc(x0,y0,27,0,TAU); cx.stroke(); }
+    else if(thin){ cx.strokeStyle='rgba(255,150,60,0.95)'; cx.lineWidth=3; cx.beginPath(); cx.arc(x0,y0,27,0,TAU); cx.stroke(); }
+    const numCol=danger?'#ff4a32':thin?'#ffb15a':'#fff6e4';
+    text(String(n),x0+30,y0-14,32,numCol,'left',danger?0.78+0.22*beat:1);
+    // v11.2: stars are shines the light will buy. Three seeds fill into the next one.
+    const sx=x0+36, sy=y0+14, starCol=danger?'#ff5c3c':thin?'#ffc06a':'#fff3c8';
+    if(!shines) drawStar(sx,sy,starR,danger?0.45+0.55*beat:0.55,starCol);
+    for(let i=0;i<shown;i++) drawStar(sx+i*gap,sy,starR,1,'#fff6d4');
+    if(shines>5) text(String(shines),sx+shown*gap,sy,20,'#fff3d0','left',1);
+    for(let i=0;i<SHINE_COST;i++){ const dx=sx-4+i*14, dy=sy+18;
+      cx.beginPath(); cx.arc(dx,dy,3.4,0,TAU);
+      cx.fillStyle=i<rem?(danger?'#ff6a48':thin?'#ffc278':'#fff1c4'):'rgba(255,220,170,0.16)'; cx.fill();
+      cx.lineWidth=1.6; cx.strokeStyle=i<rem?'rgba(40,16,4,0.8)':'rgba(255,220,170,0.75)'; cx.stroke(); }
+    if(A.shrine&&!A.shrine.awake){ const line=`the stone ahead wants ${A.shrine.need}`;
+      cx.font='14px Georgia, serif'; const lw=Math.ceil(cx.measureText(line).width)+18;
+      inkWash(12,112,lw,26); text(line,22,125,14,'#ffe8c4','left',0.95); } // kept below the count, on its own wash
   }
   // lives: little suns, top right. One life left pulses. The light's own sun, not these, gutters when the next hit would take one.
   for(let i=0;i<Math.min(game.lives,MAX_LIVES);i++){ const lx2=W-26-i*24, ly=26; const lone=game.lives===1; const pr=lone?0.82+0.18*Math.sin(game.t*4):1;

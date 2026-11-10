@@ -62,8 +62,9 @@ cooldown. Every hazard warns you before it hurts. Not every pool is what it seem
 The light you carry builds up as you gather it: you burn brighter, see further in the dark, and a
 shine reaches further (it keeps growing up to 30 light). Spend it, and you dim again.
 The number by the sun is that light, your shield. The stars under it are shines it will buy
-(one for every 3), and the three seeds are the light toward the next star. At 0 the sun gutters:
-the next hit takes a life. Motes refill this same light, up to 40.
+(one for every 3), and the three seeds are the light toward the next star. At 0 the sun and the
+number go red and pulse: the next hit takes a life. At 1 or 2 they burn amber, short of a shine.
+Motes refill this same light, up to 40.
 
 URL OPTIONS
   ?mute  no sound     ?lowres  never render above 854x480
@@ -105,8 +106,9 @@ v11.2:
   - Stomp: land on a small walker (a Gorit, a Goil, a Chroner, a Keepaway on the path) and it is
     calmed, and you hop. It does not cost light. A side hit still hurts, and still knocks you back.
     Wisps, flyers, spitters, throwers, Frygars, stalkers and bosses are not stepped on.
-  - The light a mote gives is the light a shine spends. The counter shows how many shines that is.
-    Forty remains the most you can carry.
+  - The light a mote gives is the light a shine spends. The counter shows how many shines that is,
+    large enough to read on a bright painting: the number, a star per shine, three seeds toward the
+    next. At 0 the sun and the number go red. Forty remains the most you can carry.
   - Three lives, no continues, the same knockback, the same hidden places. No new narration, no new images.
 
 v11.1 (readability on Ember, nothing else):
