@@ -1,4 +1,4 @@
-FANTOR - The Wanderer's Light (v11.1 "Ember")
+FANTOR - The Wanderer's Light (v11.2)
 A punishing old-school platformer set in the world of "The Road to Fantor". Every backdrop and
 character comes from Eh AyeC's "Fantor's Long War" collection: AI-generated images, created and
 curated by the artist (see CHARACTERS.md). The code was written with an AI coding assistant.
@@ -21,7 +21,8 @@ is src/game.js, still one file, plain canvas and WebAudio. To rebuild after edit
 CONTROLS
   Keyboard: Left/Right or A/D walk; Up, W, Space or Z jump; X, E, K or Shift shine
             (and offer light at a stone); Esc or P opens the pause menu; F fullscreen.
-            C or L: light moves, once a stone has given them. Down or S: fire, star-fall, kneel.
+            C or L: light moves, once a stone has given them.
+            Down or S: crouch. Also fire, star-fall and kneel, once a stone has given them.
 
   What each stone gives back (the control shows once when you get it, and again as the next land begins):
     Shore stone    ebb-step       C on the ground: a quick dash (1 light). Jump during it for a long leap.
@@ -32,6 +33,7 @@ CONTROLS
                                   Down at a cold brazier lights it. Down anywhere else puts the fire out.
     Dark stone     star-fall      Down in the air: drop like a star and bounce off a bell, a shadow or a shot (1 light).
   Phone: the » button is C and the ▼ button is Down. They appear once you have the move.
+            The ⌄ button is crouch (Down). It sits above the walk buttons, and it is not drawn on the end card.
   Mouse:    click the game first so it gets the keyboard (in an embed).
             The two small buttons at the top are Menu and Fullscreen.
   Phone (landscape): the on-screen buttons.
@@ -59,6 +61,10 @@ turn your light aside: dodge, and shine while they rest. Shining costs 3 light, 
 cooldown. Every hazard warns you before it hurts. Not every pool is what it seems.
 The light you carry builds up as you gather it: you burn brighter, see further in the dark, and a
 shine reaches further (it keeps growing up to 30 light). Spend it, and you dim again.
+The number by the sun is that light, your shield. The stars under it are shines it will buy
+(one for every 3), and the three seeds are the light toward the next star. At 0 the sun and the
+number go red and pulse: the next hit takes a life. At 1 or 2 they burn amber, short of a shine.
+Motes refill this same light, up to 40.
 
 URL OPTIONS
   ?mute  no sound     ?lowres  never render above 854x480
@@ -91,6 +97,19 @@ KEEP THIS CARD
   journeys, furthest, where the light has gone out, and a small honest credit. On a phone the line says to tap it.
   The walking buttons step aside on those screens so the tap can land. If your browser or the embed does not
   allow the download, press G (or tap) again within a few seconds and it opens in a new tab instead.
+
+v11.2:
+  - Crouch: hold Down or S (⌄ on a phone, above the walk buttons). Behind a tall rock it catches
+    shots that would cross the stone, including the stone in the King of Bell's arena. That stone
+    takes five such blows and then no longer shelters you. A charge, rain, and the pillars are not
+    stopped by it, and crouching in the open is not safety. Kneel, fire and star-fall are unchanged.
+  - Stomp: land on a small walker (a Gorit, a Goil, a Chroner, a Keepaway on the path) and it is
+    calmed, and you hop. It does not cost light. A side hit still hurts, and still knocks you back.
+    Wisps, flyers, spitters, throwers, Frygars, stalkers and bosses are not stepped on.
+  - The light a mote gives is the light a shine spends. The counter shows how many shines that is,
+    large enough to read on a bright painting: the number, a star per shine, three seeds toward the
+    next. At 0 the sun and the number go red. Forty remains the most you can carry.
+  - Three lives, no continues, the same knockback, the same hidden places. No new narration, no new images.
 
 v11.1 (readability on Ember, nothing else):
   - The number above a land is how many times the light has gone out there. It is labeled "lights out".

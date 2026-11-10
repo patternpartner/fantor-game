@@ -1,4 +1,4 @@
-/* FANTOR · The Wanderer's Light  (v11.1 "Ember")
+/* FANTOR · The Wanderer's Light  (v11.2)
    A small side-scrolling journey through the AI-generated art of "The Road to Fantor",
    with characters cut from Eh AyeC's Fantor collections on Fine Art America.
    Plain canvas + WebAudio, no dependencies.
@@ -13,7 +13,7 @@ let GOD=Q.has('god');            // debug invincibility (used by the autopilot t
 /*@/DEV*/
 /*@PROD const AUTO=false, DEBUG=false, START_AREA=0, MUTE=Q.has('mute'); let GOD=false; @PROD*/
 const DEATH_T=1.0; // v4: death to retry in about a second (was 1.8)
-const SHINE_COST=3, SHINE_CD=0.8, START_LIVES=3, LIFE_MOTES=50, MAX_LIVES=9;
+const SHINE_COST=3, SHINE_CD=0.8, START_LIVES=3, LIFE_MOTES=50, MAX_LIVES=9, LIGHT_CAP=40;
 const TAU=Math.PI*2;
 const clamp=(v,a,b)=>v<a?a:v>b?b:v, lerp=(a,b,t)=>a+(b-a)*t, sm=t=>t*t*(3-2*t);
 function rngf(seed){let s=seed>>>0||1;return()=>{s^=s<<13;s>>>=0;s^=s>>17;s^=s<<5;s>>>=0;return s/4294967296;};}
@@ -342,7 +342,7 @@ function bindBtn(id,k){ const el=document.getElementById(id); const ids=new Set(
   const dn=e=>{ e.preventDefault(); audioInit(); ids.add(e.pointerId); if(!keys[k]) pressed[k]=true; keys[k]=true; el.classList.add('down'); try{el.setPointerCapture(e.pointerId);}catch(_){} };
   const up=e=>{ ids.delete(e.pointerId); if(!ids.size){ keys[k]=false; el.classList.remove('down'); } };
   el.addEventListener('pointerdown',dn); el.addEventListener('pointerup',up); el.addEventListener('pointercancel',up); el.addEventListener('lostpointercapture',up); }
-bindBtn('bl','l'); bindBtn('br','r'); bindBtn('bj','j'); bindBtn('bs','s'); bindBtn('bu','c'); bindBtn('bd','d');
+bindBtn('bl','l'); bindBtn('br','r'); bindBtn('bj','j'); bindBtn('bs','s'); bindBtn('bu','c'); bindBtn('bd','d'); bindBtn('bc','d'); // v11.2: crouch is Down, on its own button so it is there before the stone-moves appear
 // v5: the move buttons only appear once a stone has given the move
 let touchMoves=-1; function touchButtons(){ const m=game.moves|0; if(m===touchMoves) return; touchMoves=m; $('bu').style.display=m>=1?'flex':'none'; $('bd').style.display=m>=5?'flex':'none'; }
 // on-screen buttons only while playing: on the end card they covered the existing "keep this card" tap
@@ -574,7 +574,7 @@ const AREAS=[
  makeArea(v6(v5({key:'heart',num:'VII',title:'The Heart of Fantor',music:'heart',len:3100,dark:0.12,darkCol:'40,24,6',ground:['#7a5222','#2a1606'],rim:'#fff0b0',fg:'heart',
   imgs:[['s17',0],['s18',1300],['s19',2300]],waves:[[5,0.004,0],[3,0.012,0]],
   gaps:[[1300,1375]],
-  solids:[{x:2420,w:320,h:26,k:'gold'},{x:2470,w:270,h:52,k:'gold'},{x:2520,w:220,h:78,k:'gold'},{x:2570,w:170,h:104,k:'gold'}],
+  solids:[{x:2050,w:44,h:50,k:'rock',cover:1},{x:2420,w:320,h:26,k:'gold'},{x:2470,w:270,h:52,k:'gold'},{x:2520,w:220,h:78,k:'gold'},{x:2570,w:170,h:104,k:'gold'}], // v11.2: one stone in the King of Bell's arena. Crouch in its lee. It takes a few blows, then it is spent.
   plats:[{x:700,y:BASE-64,w:100,k:'shard'},{x:880,y:BASE-120,w:90,k:'shard'},{x:1500,y:BASE-30,w:80,k:'shard',my:110,per:5}],
   motes:[...row(200,4,40,24),...row(710,3,35,94),...row(890,3,30,150),...row(1100,4,40,24),...row(1505,2,40,170),...row(1650,4,40,24)],
   enemies:[{t:'wisp',x:600},{t:'walker',spr:'chroner',x:1050,r:110,h:88},{t:'wisp',x:1700}],
@@ -833,8 +833,10 @@ function setupArea(i){
   const keep=d.imgs.map(x=>x[0]); dropBands(keep); keep.forEach(bands);
   game.areaTitle=4.0;
   game.log.push(['area',i,+game.t.toFixed(1)]);
+  resetCover();
   setCP(70,true);
 }
+function resetCover(){ if(!A) return; for(const s of A.d.solids) if(s.k==='rock'){ s.chip=0; s.spent=0; } }
 // checkpoints (v4): the area start, then only a calmed boss and a woken stone at the very end of a land.
 // Dying sends you back to the last one with the light you had there; motes gathered since come back too.
 // v6: two acts per land. Act 2 is a level start, like a second act on a cartridge: the first act is behind you (its shadows
@@ -855,7 +857,7 @@ function restoreCP(){
   A.motes.length=s.n; A.motes.forEach((m,i)=>{ m.got=s.got[i]; if(!m.got){ m.x=m.ox; m.y=m.oy; } });
   A.enemies.length=s.ne;
   A.enemies.forEach((e,i)=>{ if(!s.calm[i]){ e.calm=false; e.ct=0; e.x=e.x0; e.vx=0; e.hp=e.hp0; e.hit=0; e.cd=1.5; e.tele=0; e.y=e.y0; } });
-  A.shots.length=0; resetMoves();
+  A.shots.length=0; resetMoves(); resetCover();
   A.cats.forEach((c,i)=>{ if(!s.cats[i]) c.dead=false; });
   for(const p of A.plats) if(p.rot){ p.rt=0; p.off=0; p.y=p.y0; p.dy=0; }
   const B=A.boss; if(B&&!B.calm){ Object.assign(B,{st:'sleep',t:0,hp:B.max,x:A.d.boss.x,iT:0,hit:0,ai:0,rain:0}); bossResetPhase(B); B.y=gyOr(B.x); game.bossBanner=null; clearBossHazards(); for(const b of A.braziers) if(b.arena){ b.lit=true; b.snuff=0; } }
@@ -886,7 +888,8 @@ function blockedX(nx,feet){
    hanging lantern); Down carries a brazier's fire, or drops you like a star in the air. Every one of them costs light
    except carrying fire, and none of them makes you safe from anything: a hit mid-dash is still a hit. */
 const NIGHT_TEMPO=0.88; // v6: the Long Night's hazards keep a quicker beat
-const DASH_V=430, DASH_T=0.18, CARRY_V=270, AD_V=400, AD_T=0.15, AD_CARRY=290, PULL_R=270, PULL_V=620, STOMP_V=650, BOUNCE_V=470, TURN_R=74;
+const DASH_V=430, DASH_T=0.18, CARRY_V=270, AD_V=400, AD_T=0.15, AD_CARRY=290, PULL_R=270, PULL_V=620, STOMP_V=650, BOUNCE_V=470, TURN_R=74, HOP_V=230;
+const COVER_H=44, COVER_HITS=5; // a tall rock can be cover; the arena stone gives out after this many caught blows
 function hangLit(l){ if(l.gut){ const [per,on,ph]=l.gut; return ((game.t+ph)%per)<on; } return l.lit; }
 function hangFlicker(l){ if(!l.gut) return 0; const [per,on,ph]=l.gut; const t=(game.t+ph)%per; return t<on&&t>on-0.6?1:0; }
 function pullTarget(){ let best=null,bd=1e9; const px=P.x, py=P.y-27;
@@ -916,6 +919,29 @@ function downMove(inp){
 }
 function bounce(){ P.vy=-BOUNCE_V; P.stomp=false; P.airDash=true; P.inv=0.25; P.ground=false; P.plat=null; sfx.bounce(); game.shake=Math.max(game.shake,0.12);
   for(let i=0;i<10;i++){ const a=Math.PI*(0.1+0.8*i/9); A.particles.push({x:P.x,y:P.y,vx:Math.cos(a)*90,vy:Math.sin(a)*40,life:0.4,t:0,gold:1}); } }
+// v11.2: a jump landing on a small walker. Not a star-fall (that one costs light and works on anything).
+// Side-on is still a hit. Wisps, flyers, spitters, throwers, spears, stalkers and bosses are not stepped on.
+function headStomp(prevY,ny){
+  let best=null;
+  for(const e of A.enemies){
+    if(e.calm||e.t!=='walker') continue;
+    // The head band sits where a full jump can reach. The sprite is taller than the hop, so the
+    // very top of the painting is not the step. Feet already down in the body are still a side hit.
+    const top=e.y-Math.min(e.h*0.55,46), hw=e.h*0.2+8;
+    if(Math.abs(P.x-e.x)>hw) continue;
+    if(prevY>top+8) continue; // feet were already down in the body
+    if(ny<top) continue;
+    if(!best||top<best.top) best={e,top};
+  }
+  return best;
+}
+function doHeadStomp(e){
+  e.hp=0; e.hit=0.4; calmEnemy(e);
+  P.vy=-HOP_V; P.ground=false; P.plat=null; P.inv=0.3; P.carry=0; P.airDash=true;
+  sfx.bounce();
+  for(let i=0;i<6;i++){ const a=Math.PI*(0.15+0.7*i/5); A.particles.push({x:P.x,y:e.y-e.h,vx:Math.cos(a)*50,vy:Math.sin(a)*22,life:0.35,t:0,gold:1}); }
+  game.log.push(['headstomp',game.areaI,e.spr||e.t,P.x|0]);
+}
 function stompCheck(prevY){
   for(const b of A.bells){ const top=b.y-16; if(Math.abs(P.x-b.x)<24&&prevY<=top+6&&P.y>=top){ P.y=top; bounce(); b.ring=0.6; sfx.bellhit(); game.log.push(['bell',game.areaI,b.x|0]); return; } }
   for(const e of A.enemies){ if(e.calm) continue; const rr=e.t==='wisp'?18:e.h*0.32, cy=e.t==='wisp'?e.y:e.y-e.h*0.62;
@@ -965,8 +991,10 @@ function stepPlayer(dt,inp){
     nx=P.x; P.vx=0; P.carry=0; if(P.adT>0){ P.adV[0]=0; } }
   P.x=nx;
   const prev=P.y+(P.plat&&P.ground?P.plat.dy:0); let ny=P.y+P.vy*dt;
+  const hopped=P.vy>40&&!P.stomp&&P.adT<=0?headStomp(prev,ny):null;
+  if(hopped){ doHeadStomp(hopped.e); ny=hopped.top; }
   const [fy,plat]=floorAt(P.x,prev);
-  if(P.vy>=0&&ny>=fy&&prev<=fy+12){ if(!P.ground&&P.vy>250){ sfx.land(); P.sq=Math.min(1,P.vy/600); for(let i=0;i<6;i++) A.particles.push({x:P.x+(i-2.5)*5,y:fy-2,vx:(i-2.5)*22,vy:-12-(i%3)*8,life:0.35,t:0,gold:0,soft:1}); }
+  if(!hopped&&P.vy>=0&&ny>=fy&&prev<=fy+12){ if(!P.ground&&P.vy>250){ sfx.land(); P.sq=Math.min(1,P.vy/600); for(let i=0;i<6;i++) A.particles.push({x:P.x+(i-2.5)*5,y:fy-2,vx:(i-2.5)*22,vy:-12-(i%3)*8,life:0.35,t:0,gold:0,soft:1}); }
     if(P.stomp&&plat&&plat.upd!==undefined&&enterSecret(plat.upd)){ game.shake=0.3; sfx.crack(); return; }
     if(P.stomp){ P.stomp=false; game.shake=Math.max(game.shake,0.15); }
     ny=fy; P.vy=0; P.ground=true; P.plat=plat; P.carry=0; P.airDash=true; P.adT=0; P.lastPull=null; if(plat&&plat.rot&&!plat.rt){ plat.rt=0.001; sfx.creak(); } }
@@ -1036,6 +1064,11 @@ function getRelic(){
 }
 
 /* ---------------- light actions ---------------- */
+function gainLight(n){
+  // One pool. A mote adds to the light a shine spends (3 a time), up to forty — thirteen shines.
+  // There is no separate weapon charge left empty while the counter climbs.
+  P.light=Math.min(LIGHT_CAP,P.light+(n||1));
+}
 function shine(){
   const s=A.shrine, B=A.boss;
   if(s&&!s.awake&&Math.abs(P.x-s.x)<55){
@@ -1045,7 +1078,7 @@ function shine(){
   }
   if(P.shineCD>0) return;
   if(P.light<SHINE_COST){ sfx.fizzle(); showHint(`Not enough light (a shine takes ${SHINE_COST}).`,2.5); return; }
-  P.light-=SHINE_COST; P.shineCD=SHINE_CD; sfx.pulse(); game.log.push(['shine',game.areaI,P.x|0]);
+  P.light-=SHINE_COST; P.shineCD=SHINE_CD; sfx.pulse(); game.log.push(['shine',game.areaI,P.x|0]); // the same light motes refill
   const ss=A.d.secretShine; if(ss&&!P.auto&&P.ground&&P.plat&&P.plat.x0===ss.plat&&!(A.boss&&!A.boss.calm&&A.boss.st!=='sleep')) enterSecret(ss.n);
   const R=150+Math.min(P.light,30)*3, cy=P.y-30; // v7: the more light you carry, the further a shine reaches (up to 30)
   A.rings.push({x:P.x,y:P.y-PH+8,r:10,R,t:0});
@@ -1448,6 +1481,33 @@ function update(dt){
   updateWorld(dt,inp);
 }
 function touchBox(x,y,h,hw){ return Math.abs(P.x-x)<hw&&P.y>y-h+6&&P.y-PH*PS<y; }
+// v11.2: crouch (hold Down, still, on the ground — the kneel) behind a tall rock.
+// The stone has to be between you and the shot. Crouching in the open does nothing.
+// Rain, a charge, and the bell-pillars are not shots crossing the stone, so they still land.
+// The arena stone (cover:1) cracks, and after COVER_HITS caught blows it no longer shelters you.
+function tryCover(sh){
+  if(P.kneel<0.12||!P.ground||P.ember||P.dead) return false;
+  const head=P.y-PH*PS;
+  for(const s of A.d.solids){
+    if(s.k!=='rock'||s.h<COVER_H||s.spent) continue;
+    const near=P.x<s.x?s.x-P.x:P.x-(s.x+s.w);
+    if(near<2||near>36) continue;
+    if(sh.y<head-6||sh.y>P.y+10) continue;
+    const mid=s.x+s.w/2, face=P.x<mid?s.x:s.x+s.w;
+    if((sh.x-mid)*(P.x-mid)>0&&Math.abs(sh.x-face)>sh.r+10) continue;
+    const at=P.x<mid?sh.x-sh.r<=face+10:sh.x+sh.r>=face-10;
+    if(!at) continue;
+    if(P.x<mid?sh.x<P.x-4:sh.x>P.x+4) continue;
+    sh.dead=1;
+    const y=sh.y, x=face;
+    for(let i=0;i<7;i++) A.particles.push({x,y,vx:(i-3)*16,vy:-16-(i%3)*8,life:0.35,t:0,gold:1});
+    if(s.cover){ s.chip=(s.chip|0)+1; if(s.chip>=COVER_HITS){ s.spent=1; sfx.crack(); game.shake=Math.max(game.shake,0.22); } else sfx.tok(); }
+    else sfx.tok();
+    game.log.push(['cover',game.areaI,s.chip|0,P.x|0]);
+    return true;
+  }
+  return false;
+}
 function updateWorld(dt){
   const d=A.d, now=game.t, live=game.state==='play'&&!P.dead;
   game.areaTitle=Math.max(0,(game.areaTitle||0)-dt);
@@ -1472,7 +1532,7 @@ function updateWorld(dt){
       if(m.hide>0){ m.hide-=dt; if(m.hide<=0){ m.fade=0; m.fading=0; } continue; }
       if(!m.fading&&dd<110&&live) m.fading=1; if(m.fading){ m.fade=(m.fade||0)+dt; if(m.fade>0.5){ m.hide=3; continue; } } }
     else if(dd<64&&live){ m.x-=dx*dt*3.2; m.y-=dy*dt*3.2; }
-    if(dd<22&&live&&!(m.born<0.4)){ m.got=true; if(m.sec==='s1k') A.s1armed=true; P.light=Math.min(40,P.light+1); game.stats.motes++; P.pulse=Math.min(1,(P.pulse||0)+0.45); sfx.mote(); say('g01',{delay:0.3});
+    if(dd<22&&live&&!(m.born<0.4)){ m.got=true; if(m.sec==='s1k') A.s1armed=true; gainLight(1); game.stats.motes++; P.pulse=Math.min(1,(P.pulse||0)+0.45); sfx.mote(); say('g01',{delay:0.3});
       if(!m.counted&&!m.drop){ m.counted=true; game.lifeMotes++; if(game.lifeMotes>=lifeNeed()){ game.lifeMotes-=lifeNeed(); if(game.lives<(game.ember?1:MAX_LIVES)){ game.lives++; game.stats.oneups++; sfx.oneup(); say('x01'); popup('1 UP',P.x,P.y-90); game.log.push(['1up',game.lives]); } } }
       for(let i=0;i<8;i++){ const a=Math.random()*TAU; A.particles.push({x:m.x,y:m.y,vx:Math.cos(a)*60,vy:Math.sin(a)*60-20,life:0.6,t:0,gold:1}); } } }
   for(const e of A.enemies){
@@ -1542,6 +1602,7 @@ function updateWorld(dt){
     else if(s.k==='hwave'){ if(g>1e8) s.dead=1; else s.y=g-96; }
     else if(g<1e8&&s.y>g-2&&s.vy>0){ s.dead=1; for(let i=0;i<5;i++) A.particles.push({x:s.x,y:g-3,vx:(Math.random()-.5)*80,vy:-Math.random()*60,life:0.5,t:0,gold:0}); }
     if(s.t>(s.life||5)||s.y>H+300) s.dead=1;
+    if(live&&!s.dead&&tryCover(s)) continue;
     if(live&&!s.dead&&Math.abs(s.x-P.x)<s.r+8&&s.y>P.y-PH*PS-s.r&&s.y<P.y+s.r){ s.dead=1; const w=d.secretWall;
       if(s.heavy&&P.light<=0&&w&&P.x>w.x0&&P.x<w.x1&&P.inv<=0&&P.hurtT<=0&&enterSecret(w.n)){ game.shake=0.5; sfx.thud(); } else hurt(s,s.dmg||1); } }
   A.shots=A.shots.filter(s=>!s.dead);
@@ -1719,6 +1780,9 @@ function drawSolids(){
     else cx.rect(s.x,top,s.w,by-top);
     cx.fill();
     cx.strokeStyle=s.k==='gold'?'rgba(255,245,200,0.85)':'rgba(255,210,150,0.28)'; cx.lineWidth=1; cx.beginPath(); cx.moveTo(s.x+2,top+1); cx.lineTo(s.x+s.w-2,top+1); cx.stroke();
+    if(s.k==='rock'&&(s.chip||s.spent)){ cx.strokeStyle='rgba(28,10,6,0.9)'; cx.lineWidth=1; cx.beginPath(); const n=s.spent?4:(s.chip|0);
+      for(let i=0;i<n;i++){ const x=s.x+5+(i*11)%Math.max(8,s.w-8); cx.moveTo(x,top+6+i*3); cx.lineTo(x+5,top+16+i*2); cx.lineTo(x+1,top+26+i); } cx.stroke();
+      if(s.spent){ cx.fillStyle='rgba(18,8,4,0.5)'; cx.fillRect(s.x+2,top,s.w-4,7); } }
     if(s.k==='crate'){ cx.strokeStyle='rgba(0,0,0,0.45)'; cx.strokeRect(s.x+3,top+3,s.w-6,by-top-11); cx.beginPath(); cx.moveTo(s.x+3,top+3); cx.lineTo(s.x+s.w-3,by-8); cx.stroke(); }
   }
   for(const p of A.plats){ if(p.x+p.w<camX-20||p.x>camX+W+20) continue; const k=p.k;
@@ -2069,7 +2133,7 @@ function drawPlayer(){ if(P.dead>0||P.fellT) return;
     cx.save(); cx.lineCap='round'; for(let k=0;k<2;k++){ cx.strokeStyle=k?`rgba(255,230,170,${0.25+0.45*gl})`:'rgba(60,30,16,0.85)'; cx.lineWidth=k?1.4:3.2; cx.beginPath(); cx.moveTo(nx,ny);
       for(let i=1;i<=6;i++) cx.lineTo(nx-P.face*i*(3.5+sp*2.5)-P.vx*0.012*i, ny+i*(1.6-sp*0.6)+Math.sin(game.t*7-i*0.9)*(0.8+sp*1.6)*i*0.4); cx.stroke(); } cx.restore(); }
   cx.save(); cx.translate(P.x,P.y+1); if(!P.sit&&!(P.kneel>0.15)) cx.rotate(clamp(P.vx/SPD,-1.6,1.6)*(P.ground?0.05:0.035)); cx.scale(PS*(1+0.18*q),PS*(1-0.16*q));
-  const sit=P.sit||(P.kneel>0.15?0.55:0);
+  const sit=P.sit||(P.kneel>0.15?1:0); // v11.2: holding Down on the ground is a crouch (the old kneel, lower)
   if(blink) drawFigure(cx,0,0,P.face,P.walk,0,{sit,ink:'rgba(255,228,186,0.95)',inkW:1.2});
   else drawFigure( /* v9: leans a touch into the run */cx,0,0,P.face,P.walk,P.glow,{sit});
   cx.restore();
@@ -2267,19 +2331,50 @@ function text(t,x,y,size,col,align='center',alpha=1){
   cx.shadowColor='rgba(0,0,0,0.85)'; cx.shadowBlur=6; cx.fillStyle=col; cx.fillText(t,x,y); cx.restore();
 }
 function wrap(t,maxW,size){ cx.font=`${size}px Georgia, serif`; const words=t.split(' '), lines=[]; let cur=''; for(const w of words){ const tt=cur?cur+' '+w:w; if(cx.measureText(tt).width>maxW&&cur){ lines.push(cur); cur=w; } else cur=tt; } if(cur) lines.push(cur); return lines; }
+function inkWash(x,y,w,h){ const r=Math.min(16,h*0.4); cx.save(); cx.fillStyle='rgba(14,6,2,0.72)'; cx.beginPath();
+  cx.moveTo(x+r,y); cx.arcTo(x+w,y,x+w,y+h,r); cx.arcTo(x+w,y+h,x,y+h,r); cx.arcTo(x,y+h,x,y,r); cx.arcTo(x,y,x+w,y,r); cx.closePath(); cx.fill(); cx.restore(); }
+function drawStar(x,y,R,a,col){ cx.save(); cx.translate(x,y); cx.globalAlpha=a; cx.lineJoin='round'; cx.beginPath();
+  for(let k=0;k<8;k++){ const ang=k/8*TAU-Math.PI/2, r=k%2?R*0.42:R; cx.lineTo(Math.cos(ang)*r,Math.sin(ang)*r); }
+  cx.closePath(); cx.lineWidth=3; cx.strokeStyle='rgba(12,4,1,0.95)'; cx.stroke(); cx.fillStyle=col; cx.fill(); cx.restore(); }
 function drawHUD(){
-  const n=P.light; const x0=24,y0=26;
+  const n=Math.max(0,P.light); const x0=32,y0=46;
+  const shines=Math.floor(n/SHINE_COST), rem=n%SHINE_COST;
+  const danger=n<=0, thin=!danger&&n<SHINE_COST; // 0: the next hit takes a life. 1–2: no shine, one hit from empty.
+  const beat=0.62+0.38*Math.abs(Math.sin(game.t*2.6)); // a slow pulse, never blinking out
   if(game.areaI<7||A.d.secret){
+    const shown=Math.min(shines,5), starR=9, gap=22, extra=shines>5?36:0;
+    const rowW=Math.max(64,(shown||1)*gap+extra);
+    inkWash(x0+16,8,rowW+36,92); // a soft dark wash so the count reads on a bright painting
     cx.save(); cx.globalCompositeOperation='lighter';
-    const r=7+Math.min(n,40)*0.3; const g=cx.createRadialGradient(x0,y0,0,x0,y0,r*2.4); g.addColorStop(0,n>0?'rgba(255,240,200,1)':'rgba(120,70,40,0.8)'); g.addColorStop(0.35,n>0?'rgba(255,190,90,0.7)':'rgba(90,40,20,0.4)'); g.addColorStop(1,'rgba(255,120,30,0)'); cx.fillStyle=g; cx.beginPath(); cx.arc(x0,y0,r*2.4,0,TAU); cx.fill();
-    cx.restore();
-    const fr=game.ember?0:game.lifeMotes/lifeNeed(); cx.strokeStyle='rgba(255,220,160,0.18)'; cx.lineWidth=2; cx.beginPath(); cx.arc(x0,y0,15,0,TAU); cx.stroke(); cx.strokeStyle='rgba(255,226,170,0.75)'; cx.beginPath(); cx.arc(x0,y0,15,-Math.PI/2,-Math.PI/2+TAU*fr); cx.stroke(); // v7: the ring fills toward a new life
-    text(String(n),x0+28+Math.min(n,40)*0.12,y0+1,19,'#ffe6b8','left',0.95);
-    if(A.shrine&&!A.shrine.awake) text(`the stone ahead wants ${A.shrine.need}`,x0+54,y0+1,12,'rgba(255,220,180,0.65)','left',0.85);
+    const glow=danger?30:22+Math.min(n,LIGHT_CAP)*0.35;
+    const g=cx.createRadialGradient(x0,y0,0,x0,y0,glow);
+    const hot=danger?'255,50,30':thin?'255,140,50':'255,200,110';
+    g.addColorStop(0,`rgba(255,245,220,${danger?beat:1})`); g.addColorStop(0.45,`rgba(${hot},${danger?0.9*beat:0.8})`); g.addColorStop(1,'rgba(255,80,20,0)');
+    cx.fillStyle=g; cx.beginPath(); cx.arc(x0,y0,glow,0,TAU); cx.fill(); cx.restore();
+    cx.fillStyle=danger?`rgba(255,48,28,${0.75+0.25*beat})`:thin?'#ffb15a':'#fff6dc';
+    cx.beginPath(); cx.arc(x0,y0,12,0,TAU); cx.fill();
+    const fr=game.ember?0:game.lifeMotes/lifeNeed(); cx.strokeStyle='rgba(255,220,160,0.28)'; cx.lineWidth=3; cx.beginPath(); cx.arc(x0,y0,20,0,TAU); cx.stroke(); cx.strokeStyle='rgba(255,236,190,0.95)'; cx.beginPath(); cx.arc(x0,y0,20,-Math.PI/2,-Math.PI/2+TAU*fr); cx.stroke(); // v7: the ring fills toward a new life
+    if(danger){ cx.strokeStyle=`rgba(255,64,36,${0.5+0.5*beat})`; cx.lineWidth=4; cx.beginPath(); cx.arc(x0,y0,27,0,TAU); cx.stroke(); }
+    else if(thin){ cx.strokeStyle='rgba(255,150,60,0.95)'; cx.lineWidth=3; cx.beginPath(); cx.arc(x0,y0,27,0,TAU); cx.stroke(); }
+    const numCol=danger?'#ff4a32':thin?'#ffb15a':'#fff6e4';
+    text(String(n),x0+30,y0-14,32,numCol,'left',danger?0.78+0.22*beat:1);
+    // v11.2: stars are shines the light will buy. Three seeds fill into the next one.
+    const sx=x0+36, sy=y0+14, starCol=danger?'#ff5c3c':thin?'#ffc06a':'#fff3c8';
+    if(!shines) drawStar(sx,sy,starR,danger?0.45+0.55*beat:0.55,starCol);
+    for(let i=0;i<shown;i++) drawStar(sx+i*gap,sy,starR,1,'#fff6d4');
+    if(shines>5) text(String(shines),sx+shown*gap,sy,20,'#fff3d0','left',1);
+    for(let i=0;i<SHINE_COST;i++){ const dx=sx-4+i*14, dy=sy+18;
+      cx.beginPath(); cx.arc(dx,dy,3.4,0,TAU);
+      cx.fillStyle=i<rem?(danger?'#ff6a48':thin?'#ffc278':'#fff1c4'):'rgba(255,220,170,0.16)'; cx.fill();
+      cx.lineWidth=1.6; cx.strokeStyle=i<rem?'rgba(40,16,4,0.8)':'rgba(255,220,170,0.75)'; cx.stroke(); }
+    if(A.shrine&&!A.shrine.awake){ const line=`the stone ahead wants ${A.shrine.need}`;
+      cx.font='14px Georgia, serif'; const lw=Math.ceil(cx.measureText(line).width)+18;
+      inkWash(12,112,lw,26); text(line,22,125,14,'#ffe8c4','left',0.95); } // kept below the count, on its own wash
   }
-  // lives: little suns, top right
-  for(let i=0;i<Math.min(game.lives,MAX_LIVES);i++){ const lx2=W-26-i*24, ly=26; cx.save(); cx.globalCompositeOperation='lighter'; const g=cx.createRadialGradient(lx2,ly,0,lx2,ly,13); g.addColorStop(0,'rgba(255,245,210,1)'); g.addColorStop(0.45,'rgba(255,190,90,0.85)'); g.addColorStop(1,'rgba(255,120,30,0)'); cx.fillStyle=g; cx.beginPath(); cx.arc(lx2,ly,13,0,TAU); cx.fill(); cx.restore();
-    cx.strokeStyle='rgba(255,220,150,0.7)'; cx.lineWidth=1; cx.beginPath(); for(let k=0;k<8;k++){ const a=k/8*TAU+game.t*0.5; cx.moveTo(lx2+Math.cos(a)*7,ly+Math.sin(a)*7); cx.lineTo(lx2+Math.cos(a)*10,ly+Math.sin(a)*10); } cx.stroke(); }
+  // lives: little suns, top right. One life left pulses. The light's own sun, not these, gutters when the next hit would take one.
+  for(let i=0;i<Math.min(game.lives,MAX_LIVES);i++){ const lx2=W-26-i*24, ly=26; const lone=game.lives===1; const pr=lone?0.82+0.18*Math.sin(game.t*4):1;
+    cx.save(); cx.globalCompositeOperation='lighter'; const g=cx.createRadialGradient(lx2,ly,0,lx2,ly,13); g.addColorStop(0,'rgba(255,245,210,1)'); g.addColorStop(0.45,'rgba(255,190,90,0.85)'); g.addColorStop(1,'rgba(255,120,30,0)'); cx.fillStyle=g; cx.beginPath(); cx.arc(lx2,ly,13*pr,0,TAU); cx.fill(); cx.restore();
+    cx.strokeStyle='rgba(255,220,150,0.7)'; cx.lineWidth=1; cx.beginPath(); for(let k=0;k<8;k++){ const a=k/8*TAU+game.t*0.5; cx.moveTo(lx2+Math.cos(a)*7,ly+Math.sin(a)*7); cx.lineTo(lx2+Math.cos(a)*10*pr,ly+Math.sin(a)*10*pr); } cx.stroke(); }
   if(game.areaI<7||A.d.secret){ text(`lives`,W-26-Math.min(game.lives,MAX_LIVES)*24+4,27,11,'rgba(255,220,180,0.7)','right',0.85);
     if(!game.ember) text(`${game.lifeMotes}/${lifeNeed()} to a new life`,W-14,48,10,'rgba(255,220,180,0.55)','right',0.8); }
   if(SET.timer&&game.fromStart&&!A.d.bench) text(fmtT(runT(),1),14,H-14,13,'rgba(255,236,206,0.8)','left',0.9); // v6: the run timer (pause menu)
@@ -2365,9 +2460,9 @@ function drawTitle(){
     if(n&&n.runs) q.push(`long nights ${n.runs}`+(n.far?`     furthest  ${farLabel(n)}`:''));
     const e=r.ember; if(e&&e.runs) q.push(`ember runs ${e.runs}`+(e.far?`     furthest  ${farLabel(e)}`:'')); // v11
     if(q.length) text(q.join('          '),W/2,H*0.72+52,11,'rgba(255,222,190,0.62)','center',a); }
-  text('v11.1',W-10,H-13,9,'rgba(255,220,190,0.35)','right',a);
+  text('v11.2',W-10,H-13,9,'rgba(255,220,190,0.35)','right',a);
   if(dmAny()) text(touchMode?'tap here: where the light has gone out':'M  where the light has gone out',W-14,18,11,'rgba(255,222,190,0.6)','right',a);
-  text(touchMode?'◀ ▶ walk    ⤒ jump    ✦ shine / offer light':'← →  walk     ↑ / Space  jump     X  shine / offer light     Esc  menu     F  fullscreen',W/2,H-32,13,'rgba(255,230,200,0.8)','center',a);
+  text(touchMode?'◀ ▶ walk    ⤒ jump    ⌄ crouch    ✦ shine':'← →  walk     ↑ jump     ↓ crouch     X  shine     Esc menu',W/2,H-32,13,'rgba(255,230,200,0.8)','center',a);
   text('a journey through the art of The Road to Fantor',W/2,H-13,10,'rgba(255,220,190,0.5)','center',a);
 }
 // v11: the lifetime map, one row per land, a count of every time the light has gone out there, in every journey kept in this browser
@@ -2400,7 +2495,7 @@ function cardCanvas(){ const C=document.createElement('canvas'); C.width=1200; C
   for(let i=0;i<cols;i++){ const x=100+cw*(i+0.5); T(i<7?AREAS[i].num:'Dusk',x,y0+36,20,'#ffd59a'); T(String(n[i]),x,y0+68,26,'#fff6e6'); }
   T(`this run: light gathered ${s.motes|0}, shadows calmed ${s.calmed|0}, old powers calmed ${s.bosses|0}`,600,y0+116,17,'#ffe6cc');
   T('AI-generated art, created and curated by Eh AyeC',600,610,15,'rgba(255,225,195,0.85)');
-  T('https://ehayec.itch.io/fantor-the-wanderers-light',600,638,16,'#ffcf9a'); T('v11.1',1185,660,11,'rgba(255,220,190,0.5)','right');
+  T('https://ehayec.itch.io/fantor-the-wanderers-light',600,638,16,'#ffcf9a'); T('v11.2',1185,660,11,'rgba(255,220,190,0.5)','right');
   return C; }
 function saveCard(){ if(!(game.state==='end'||game.state==='gameover')) return; let url; try{ url=cardCanvas().toDataURL('image/png'); }catch(_){ return; }
   const again=game.cardT&&game.t-game.cardT<8; game.cardT=game.t; game.cardN=(game.cardN|0)+1; let u=url;
@@ -2436,7 +2531,7 @@ function drawEnd(){
     ...(game.newBest?[['Best','a new best']]:game.oldBest?[['Best',fmtT(game.oldBest,1)]]:[])];
   rows.forEach(([k,v],i)=>{ const aa=clamp((t-2-i*0.4)/1,0,1)*cardA; text(k,W/2-12,H*0.38+i*25,16,'#ffdcae','right',aa); text(String(v),W/2+12,H*0.38+i*25,16,'#fff6e6','left',aa); });
   if(game.nightNew) text('The Long Night has begun. It waits on the title.',W/2,H-56,15,'#c8d4ff','center',clamp((t-6)/1.5,0,1)*cardA);
-  text("FANTOR: The Wanderer's Light  v11.1",W/2,H-10,9,'rgba(255,220,190,0.45)','center',a);
+  text("FANTOR: The Wanderer's Light  v11.2",W/2,H-10,9,'rgba(255,220,190,0.45)','center',a);
   if(t>4) text(touchMode?'Tap to return':'Press Enter to return',W/2,H-30,14,'#ffe8cc','center',0.5+0.4*Math.sin(t*2));
   drawCardBtn(t); // v11
 }
@@ -2494,7 +2589,7 @@ function drawGameOver(){
   text(game.night?'No continues. The long night begins again at the shore.':'No continues. The journey begins again at the shore.',W/2,H-56,14,'#ffd9b8','center',clamp((t-2.5)/1,0,1)*0.85);
   if(t>3.0) text(touchMode?'Tap to begin again':'Press Enter to begin again',W/2,H-30,16,'#fff0dc','center',0.5+0.4*Math.sin(t*2.5));
   drawCardBtn(t); // v11
-  text("FANTOR: The Wanderer's Light  v11.1",W/2,H-10,9,'rgba(255,220,190,0.4)','center',a); // v10
+  text("FANTOR: The Wanderer's Light  v11.2",W/2,H-10,9,'rgba(255,220,190,0.4)','center',a); // v10
 }
 function drawLoading(){
   base(); cx.fillStyle='#050302'; cx.fillRect(0,0,W,H);
@@ -2548,7 +2643,8 @@ setInterval(()=>{ if(!ac) return; const cur=A?A.d.music:'title'; const nx=A&&ARE
   stop(){ return new Promise(res=>{ this.mr.onstop=async()=>{ const b=new Blob(this.chunks,{type:'video/webm'}); const buf=new Uint8Array(await b.arrayBuffer()); let s=''; for(let i=0;i<buf.length;i+=0x8000) s+=String.fromCharCode.apply(null,buf.subarray(i,i+0x8000)); res(btoa(s)); }; this.mr.stop(); }); }
 };
 window.fantorTest={ deathPhrase, deathListLine, clusterMarks, backdropPlan, cardZone, cardLabel, dmGet, recGet,
-  consts:()=>({START_LIVES,MAX_LIVES,GRAV,JV,SPD,PH,PW}),
+  shines:()=>Math.floor(Math.max(0,P.light)/SHINE_COST),
+  consts:()=>({START_LIVES,MAX_LIVES,GRAV,JV,SPD,PH,PW,SHINE_COST,LIGHT_CAP,COVER_H,COVER_HITS,HOP_V}),
   areas:()=>AREAS.map(a=>({key:a.key,imgs:a.imgs,gaps:a.gaps,len:a.len})),
   nights:()=>NIGHT.map(a=>({key:a.key,imgs:a.imgs,gaps:a.gaps,len:a.len})) };
 window.fantorDebug={ cam:()=>[camX,camY], kill:()=>{ if(game.state==='play'&&!P.dead){ const g=GOD; GOD=false; loseLife('debug'); GOD=g; } }, setLives:(n)=>{ game.lives=n; }, god:(v)=>{ GOD=!!v; }, boss:()=>A&&A.boss&&{st:A.boss.st,hp:A.boss.hp,calm:A.boss.calm,x:Math.round(A.boss.x),phase:A.boss.phase,atk:A.boss.atk}, bossHp:(n)=>{ const B=A.boss; B.hp=n; while(B.phase<B.nph&&B.hp<=B.th[B.phase-1]) bossPhase(); }, deaths:()=>game.deaths, tp:(x,light)=>{ P.x=x; P.y=A.d.gy(x); P.vy=0; camX=clamp(x-W*0.36,0,A.d.len-W); for(const t of A.trig) if(t.x<x) { t.done=true; } for(const fo of A.folk) if(fo.x<x) fo.said=true; vo.queue.length=0; if(vo.cur){ try{ vo.cur.src&&vo.cur.src.stop(); }catch(_){} vo.cur.end=0; } if(light!==undefined) P.light=light; }, goArea, setLight:(n)=>{P.light=n;}, enterSecret, relics:()=>[...game.relics], giveRelics:(n)=>{ for(let i=0;i<n;i++) game.relics.add(i); }, areas:AREAS, nareas:NIGHT, act:()=>A&&A.act, night:()=>game.night, splits:()=>game.splits, store, moves:(n)=>{ if(n!==undefined) game.moves=n; return game.moves; }, P:()=>P, A:()=>A, state:()=>({act:A&&A.act,night:game.night,moves:game.moves,ember:!!P.ember,secret:A&&A.d.secret||0,relics:game.relics.size,audio:ac?ac.state:null,menu:menuOpen,rs:RS,cw:cv.width,ch:cv.height,state:game.state,area:game.areaI,x:Math.round(P.x),y:Math.round(P.y),light:P.light,lives:game.lives,dead:P.dead,stats:game.stats,throne:game.throne&&game.throne.phase,vo:vo.cur&&vo.cur.id,boss:A&&A.boss?{st:A.boss.st,hp:A.boss.hp,calm:A.boss.calm,phase:A.boss.phase}:null,shrine:A&&A.shrine?{need:A.shrine.need,awake:A.shrine.awake}:null}) };/*@/DEV*/
