@@ -56,6 +56,14 @@ function sourceChecks(){
   assert(SRC.includes("localStorage.getItem('fantor.'+k)") && SRC.includes("store.get('dmap')") && SRC.includes("store.get('rec')"), 'records stay in the same fantor.dmap and fantor.rec keys');
   assert(SRC.includes('function cardZone') && SRC.includes('function syncTouch'), 'the card tap is the existing one, and play buttons leave the end screens');
   assert(!/hand-?painted/i.test(SRC), 'the source does not call the art hand-painted');
+  const HTML = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  assert(HTML.includes('id="bc"'), 'phones have a crouch button');
+  assert(HTML.includes('crouch, fire, star-fall, kneel'), 'the pause menu lists crouch');
+  assert(SRC.includes("e.t!=='walker'"), 'a head stomp only accepts a walker');
+  assert(SRC.includes('function gainLight'), 'collected light goes into the shine pool');
+  assert(SRC.includes('function tryCover'), 'crouching behind a rock can cover a shot');
+  assert(SRC.includes("k:'rock',cover:1"), 'the King of Bell arena has a cover stone');
+  assert(SRC.includes('v11.2') && !SRC.includes('v11.1'), 'the source is marked v11.2');
 }
 
 async function boot(browser, gameFile){
@@ -214,6 +222,259 @@ async function browserChecks(browser){
   await ember.page.close();
 }
 
+function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+async function canvasPng(page, file){
+  const data = await page.evaluate(() => document.getElementById('game').toDataURL('image/png'));
+  fs.mkdirSync('/opt/cursor/artifacts', { recursive: true });
+  fs.writeFileSync(file, Buffer.from(data.split(',')[1], 'base64'));
+}
+
+async function playChecks(browser){
+  console.log('v11.2 play');
+  const { page, errors } = await boot(browser);
+  await page.setViewport({ width: 1100, height: 700, deviceScaleFactor: 1 });
+  await page.waitForFunction(() => window.fantorDebug && window.FANTOR && window.FANTOR.state!=='loading', { timeout: 30000 });
+  await page.focus('canvas#game');
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(() => window.FANTOR.state==='play', { timeout: 10000 });
+  await sleep(400);
+
+  // Collect motes with the keyboard, then shine. Shore motes at 300, 340, 380.
+  await page.evaluate(() => { window.fantorDebug.setLight(0); window.fantorDebug.tp(240); });
+  await page.keyboard.down('ArrowRight');
+  let got = null;
+  for(let i=0;i<50;i++){
+    await sleep(40);
+    got = await page.evaluate(() => ({ light: window.fantorDebug.state().light, shines: window.fantorTest.shines() }));
+    if(got.light>=3) break;
+  }
+  await page.keyboard.up('ArrowRight');
+  assert(got && got.shines>=1, 'walking into motes refills a shine (light '+(got&&got.light)+', shines '+(got&&got.shines)+')');
+  const before = got.light;
+  await page.keyboard.press('KeyX');
+  await sleep(180);
+  const shone = await page.evaluate(() => ({ light: window.fantorDebug.state().light, rings: window.fantorDebug.A().rings.length }));
+  assert(shone.light===before-3 && shone.rings>0, 'that shine spends 3 of the gathered light ('+before+' -> '+shone.light+', rings '+shone.rings+')');
+
+  // Two light is not a shine. One more mote, gathered by walking, is.
+  await page.evaluate(() => {
+    const d = window.fantorDebug;
+    d.setLight(2); d.tp(250);
+    const m = d.A().motes[0];
+    m.got=false; m.x=360; m.y=d.A().d.gy(360)-16; m.hide=0; m.born=1; m.ft=0;
+  });
+  await sleep(900);
+  await page.keyboard.press('KeyX');
+  await sleep(120);
+  const held = await page.evaluate(() => window.fantorDebug.state().light);
+  assert(held===2, 'two light does not shine (stayed '+held+')');
+  await page.keyboard.down('ArrowRight');
+  let third = held;
+  for(let i=0;i<40;i++){
+    await sleep(40);
+    third = await page.evaluate(() => window.fantorDebug.state().light);
+    if(third>=3) break;
+  }
+  await page.keyboard.up('ArrowRight');
+  assert(third>=3, 'the next mote completes a shine (light '+third+')');
+  await page.keyboard.press('KeyX');
+  await sleep(150);
+  const again = await page.evaluate(() => window.fantorDebug.state().light);
+  assert(again===third-3, 'and that shine spends it ('+third+' -> '+again+')');
+
+  await page.evaluate(() => {
+    const d = window.fantorDebug;
+    d.setLight(40); d.tp(470);
+    const m = d.A().motes[0];
+    m.got=false; m.x=500; m.y=d.A().d.gy(500)-16; m.hide=0; m.born=1;
+  });
+  await page.keyboard.down('ArrowRight');
+  await sleep(500);
+  await page.keyboard.up('ArrowRight');
+  const capped = await page.evaluate(() => window.fantorDebug.state().light);
+  assert(capped===40, 'past forty, a mote does not raise the pool (got '+capped+')');
+
+  await page.evaluate(() => window.fantorDebug.setLight(5));
+  await sleep(200);
+  await canvasPng(page, '/opt/cursor/artifacts/hud-shines.png');
+  await page.evaluate(() => window.fantorDebug.setLight(0));
+  await sleep(280);
+  await canvasPng(page, '/opt/cursor/artifacts/hud-danger.png');
+  await page.evaluate(() => window.fantorDebug.setLight(8));
+
+  // Shore walker: a side touch hurts, a landing from a jump does not, and calms it.
+  await page.evaluate(() => {
+    const d = window.fantorDebug;
+    const A = d.A();
+    for(const e of A.enemies) if(e.t!=='walker') e.x=-400;
+    const w = A.enemies.find(e => e.t==='walker');
+    w.calm=false; w.hp=w.hp0; w.x=1180; w.x0=1180; w.r=40; w.y=A.d.gy(1180); w.vx=0;
+    for(const m of A.motes) if(Math.abs(m.x-1180)<280) m.got=true;
+    d.setLight(10);
+    d.tp(1120);
+    const P = d.P(); P.vx=0; P.vy=0; P.hurtT=0; P.ground=true;
+  });
+  await sleep(80);
+  const side0 = await page.evaluate(() => window.fantorDebug.state().light);
+  await page.keyboard.down('ArrowRight');
+  let side = null;
+  for(let i=0;i<30;i++){
+    await sleep(40);
+    side = await page.evaluate(() => {
+      const w = window.fantorDebug.A().enemies.find(e => e.t==='walker');
+      return { light: window.fantorDebug.state().light, calm: !!w.calm };
+    });
+    if(side.light<side0) break;
+  }
+  await page.keyboard.up('ArrowRight');
+  assert(side && side.light<side0 && !side.calm, 'walking into the walker still hurts (light '+side0+' -> '+(side&&side.light)+', calm '+!!(side&&side.calm)+')');
+
+  await sleep(1100);
+  await page.evaluate(() => {
+    const d = window.fantorDebug;
+    const w = d.A().enemies.find(e => e.t==='walker');
+    w.x=w.x0; w.y=d.A().d.gy(w.x0); w.vx=0;
+    d.tp(w.x-8);
+    const P = d.P(); P.vx=0; P.vy=0; P.hurtT=0; P.ground=true;
+  });
+  let stomped = false;
+  for(let attempt=0; attempt<8 && !stomped; attempt++){
+    await page.evaluate(() => {
+      const d = window.fantorDebug;
+      const w = d.A().enemies.find(e => e.t==='walker');
+      if(w.calm) return;
+      w.x=1180; w.x0=1180; w.vx=0; w.y=d.A().d.gy(1180);
+      d.tp(1128);
+      const P = d.P(); P.vx=0; P.vy=0; P.hurtT=0; P.ground=true; P.inv=0.8;
+      d.setLight(8);
+    });
+    await page.keyboard.down('ArrowRight');
+    await page.keyboard.down('Space');
+    await sleep(420);
+    await page.keyboard.up('Space');
+    for(let i=0;i<22;i++){
+      await sleep(30);
+      const s = await page.evaluate(() => {
+        const w = window.fantorDebug.A().enemies.find(e => e.t==='walker');
+        return { calm: !!w.calm, n: window.FANTOR.log.filter(r => r[0]==='headstomp').length };
+      });
+      if(s.calm && s.n){ stomped=true; await canvasPng(page, '/opt/cursor/artifacts/stomp-shore.png'); break; }
+    }
+    await page.keyboard.up('ArrowRight');
+    await page.keyboard.up('Space');
+  }
+  const hop = await page.evaluate(() => {
+    const w = window.fantorDebug.A().enemies.find(e => e.t==='walker');
+    return { calm: !!w.calm, light: window.fantorDebug.state().light, n: window.FANTOR.log.filter(r => r[0]==='headstomp').length, vy: window.fantorDebug.P().vy };
+  });
+  assert(stomped && hop.calm && hop.n>=1, 'a jump landing stomps the Shore walker (calm '+hop.calm+', stomps '+hop.n+')');
+  assert(hop.light>=8, 'the stomp did not cost light (landed at '+hop.light+')');
+
+  // Final boss: crouch behind the arena stone and a wave stops. Standing, and crouching in the open, do not.
+  await page.evaluate(() => window.fantorDebug.goArea(6));
+  await page.waitForFunction(() => window.FANTOR.state==='play' && window.fantorDebug.state().area===6, { timeout: 10000 });
+  await sleep(250);
+  const pocket = await page.evaluate(() => {
+    const d = window.fantorDebug;
+    const A = d.A();
+    const rock = A.d.solids.find(s => s.cover);
+    const B = A.boss;
+    d.setLight(9);
+    d.tp(rock.x-16);
+    const P = d.P(); P.vx=0; P.vy=0; P.ground=true; P.hurtT=0; P.kneel=0;
+    B.x=rock.x+rock.w+160; B.st='rest'; B.t=0; B.restT=40; B.iT=1; B.hp=B.max;
+    A.shots.length=0;
+    return { px: Math.round(P.x), rx: Math.round(rock.x), a0: B.a0, a1: B.a1, h: rock.h };
+  });
+  assert(pocket.h>=44 && pocket.px>pocket.a0 && pocket.px<pocket.a1, 'the stone stands inside the King of Bell arena');
+  await page.keyboard.down('ArrowDown');
+  await sleep(280);
+  const kneel = await page.evaluate(() => window.fantorDebug.P().kneel);
+  assert(kneel>0.12, 'Down crouches (kneel '+kneel.toFixed(2)+')');
+  await page.evaluate(() => {
+    const A = window.fantorDebug.A();
+    const rock = A.d.solids.find(s => s.cover);
+    const g = A.d.gy(rock.x+rock.w+30);
+    A.shots.push({ x: rock.x+rock.w+80, y: g-12, vx: -260, vy: 0, g: 0, r: 11, k: 'wave', dmg: 2, life: 3, t: 0 });
+  });
+  await sleep(600);
+  const blocked = await page.evaluate(() => {
+    const d = window.fantorDebug;
+    const rock = d.A().d.solids.find(s => s.cover);
+    return { light: d.state().light, chip: rock.chip|0, shots: d.A().shots.length };
+  });
+  await page.evaluate(() => { window.FANTOR.actT=0; window.FANTOR.areaTitle=0; });
+  await sleep(50);
+  await canvasPng(page, '/opt/cursor/artifacts/crouch-cover.png');
+  assert(blocked.light===9 && blocked.chip>=1 && blocked.shots===0, 'the crouched stone stopped the wave (light '+blocked.light+', chip '+blocked.chip+', left '+blocked.shots+')');
+
+  await page.keyboard.up('ArrowDown');
+  await sleep(150);
+  await page.evaluate(() => {
+    const d = window.fantorDebug;
+    const A = d.A();
+    const rock = A.d.solids.find(s => s.cover);
+    d.setLight(9); d.tp(rock.x-16);
+    const P = d.P(); P.vx=0; P.vy=0; P.ground=true; P.hurtT=0; P.kneel=0;
+    A.shots.length=0;
+    const g = A.d.gy(rock.x+rock.w+30);
+    A.shots.push({ x: rock.x+rock.w+80, y: g-12, vx: -260, vy: 0, g: 0, r: 11, k: 'wave', dmg: 2, life: 3, t: 0 });
+  });
+  await sleep(600);
+  const stood = await page.evaluate(() => window.fantorDebug.state().light);
+  assert(stood<9, 'standing at the stone does not stop the wave (light '+stood+')');
+
+  await page.evaluate(() => {
+    const d = window.fantorDebug;
+    const A = d.A();
+    const B = A.boss;
+    d.setLight(9); d.tp(B.a1-90);
+    const P = d.P(); P.vx=0; P.vy=0; P.ground=true; P.hurtT=0; P.kneel=0;
+    B.x=B.a0+80; B.st='rest'; B.t=0; B.restT=40;
+    A.shots.length=0;
+  });
+  await page.keyboard.down('ArrowDown');
+  await sleep(250);
+  await page.evaluate(() => {
+    const A = window.fantorDebug.A();
+    const P = window.fantorDebug.P();
+    const g = A.d.gy(P.x+20);
+    A.shots.push({ x: P.x+140, y: g-12, vx: -260, vy: 0, g: 0, r: 11, k: 'wave', dmg: 2, life: 3, t: 0 });
+  });
+  await sleep(600);
+  await page.keyboard.up('ArrowDown');
+  const open = await page.evaluate(() => window.fantorDebug.state().light);
+  assert(open<9, 'crouching in the open does not stop the wave (light '+open+')');
+
+  await page.close();
+
+  const phone = await browser.newPage();
+  await phone.setViewport({ width: 844, height: 390, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
+  phone.on('pageerror', err => errors.push(String(err.message || err)));
+  await phone.goto(`http://127.0.0.1:${PORT}/?mute&lowres`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+  await phone.waitForFunction(() => window.FANTOR && window.FANTOR.state!=='loading', { timeout: 30000 });
+  await phone.evaluate(() => window.dispatchEvent(new Event('touchstart')));
+  await phone.focus('canvas#game');
+  await phone.keyboard.press('Enter');
+  await phone.waitForFunction(() => window.FANTOR.state==='play', { timeout: 10000 });
+  await sleep(300);
+  const lay = await phone.evaluate(() => {
+    const box = id => { const b=document.getElementById(id).getBoundingClientRect(); return { x:b.left, y:b.top, r:b.right, b:b.bottom }; };
+    const hit = (a,c) => a.x<c.r && a.r>c.x && a.y<c.b && a.b>c.y;
+    const cv = document.getElementById('game').getBoundingClientRect();
+    const card = { x: cv.left+cv.width*(854-240)/854, y: cv.top+cv.height*(480-50)/480, r: cv.right, b: cv.bottom };
+    const bc=box('bc'), bl=box('bl'), br=box('br'), bj=box('bj'), bs=box('bs'), bd=box('bd'), bu=box('bu');
+    return {
+      walk: hit(bc,bl)||hit(bc,br), right: hit(bc,bj)||hit(bc,bs)||hit(bc,bd)||hit(bc,bu),
+      card: hit(bc,card), on: document.getElementById('touch').classList.contains('on')
+    };
+  });
+  assert(lay.on && !lay.walk && !lay.right && !lay.card, 'the crouch button clears the other buttons and the card tap '+JSON.stringify(lay));
+  await phone.screenshot({ path: '/opt/cursor/artifacts/phone-controls.png' });
+  assert(errors.length===0, 'no page errors during play ('+(errors[0]||'none')+')');
+  await phone.close();
+}
+
 async function prodChecks(browser){
   console.log('built game.js');
   useSource = false;
@@ -222,7 +483,7 @@ async function prodChecks(browser){
   assert(!built.includes("Q.has('auto')") && !built.includes('has("auto")'), 'the shipped file has no autopilot switch');
   assert(built.includes('was struck') && !built.includes('struck down'), 'the shipped card says "was struck"');
   assert(built.includes('lights out') && !built.includes('all journeys'), 'the shipped strip says "lights out"');
-  assert(built.includes('v11.1'), 'the shipped build is marked v11.1');
+  assert(built.includes('v11.2') && !built.includes('v11.1'), 'the shipped build is marked v11.2');
   const { page, errors } = await boot(browser, 'game.js');
   await page.waitForFunction(() => {
     const c = document.getElementById('game');
@@ -244,6 +505,7 @@ async function prodChecks(browser){
   });
   try {
     await browserChecks(browser);
+    await playChecks(browser);
     await prodChecks(browser);
   } finally {
     await browser.close();
