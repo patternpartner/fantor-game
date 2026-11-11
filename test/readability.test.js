@@ -81,14 +81,14 @@ function sourceChecks(){
   assert(!/hand-?painted/i.test(SRC), 'the source does not call the art hand-painted');
 }
 
-async function boot(browser, query){
+async function boot(browser, query, gfx){
   const page = await browser.newPage();
   const errors = [];
   page.on('pageerror', err => errors.push(String(err.message || err)));
   await page.setViewport({ width: 1280, height: 720, deviceScaleFactor: 1 });
-  await page.evaluateOnNewDocument(() => {
-    localStorage.setItem('fantor.settings', JSON.stringify({ music: 0, voice: 0, sfx: 0, timer: 0, gfx: 1, depth: 1 }));
-  });
+  await page.evaluateOnNewDocument((gfx) => {
+    localStorage.setItem('fantor.settings', JSON.stringify({ music: 0, voice: 0, sfx: 0, timer: 0, gfx, depth: 1, gv: 1 }));
+  }, gfx);
   await page.goto(`http://127.0.0.1:${PORT}/?${query}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.waitForFunction(() => window.FANTOR && window.FANTOR.state === 'play', { timeout: 30000 });
   return { page, errors };
@@ -195,13 +195,24 @@ async function main(){
   const server = await serve();
   const browser = await puppeteer.launch({
     executablePath: CHROME, headless: 'new',
-    args: ['--no-sandbox', '--disable-gpu', '--use-angle=swiftshader', '--hide-scrollbars']
+    args: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader', '--enable-webgl', '--ignore-gpu-blocklist', '--enable-unsafe-swiftshader', '--hide-scrollbars']
   });
   console.log('contrast against v11.4');
-  const { page, errors } = await boot(browser, 'mute&god&clean&auto');
-  assert(errors.length === 0, 'the layered game reaches play (' + (errors[0] || 'no errors') + ')');
+  let page, errors, webglPage;
+  for(const pass of [{ gfx: 1, name: 'webgl' }, { gfx: 4, name: 'classic' }]){
+  ({ page, errors } = await boot(browser, 'mute&god&clean&auto', pass.gfx));
+  assert(errors.length === 0, pass.name + ' reaches play (' + (errors[0] || 'no errors') + ')');
   for(const sc of SCENES){
     await pose(page, sc);
+    if(pass.gfx === 1){
+      await page.waitForFunction(() => { const g = window.fantorDebug.gfx(); return g.para === 1 || g.gl === 'classic'; }, { timeout: 8000 }).catch(() => {});
+      const g = await page.evaluate(() => window.fantorDebug.gfx());
+      assert(g.gl === 'webgl2' || g.gl === 'webgl1', sc.id + ' ultra stays on WebGL (' + g.gl + ')');
+      assert(g.para === 1, sc.id + ' ultra uses depth parallax');
+    } else {
+      const g = await page.evaluate(() => window.fantorDebug.gfx());
+      assert(g.gl === 'classic' && g.tier === 4, sc.id + ' classic stays on the canvas path (' + g.gl + ' tier ' + g.tier + ')');
+    }
     const rows = await measure(page);
     const base = BASE[sc.id].rows;
     assert(rows.length === base.length, sc.id + ' still has ' + base.length + ' boxes (got ' + rows.length + ')');
@@ -212,8 +223,12 @@ async function main(){
       const ratio = base[i].contrast ? rows[i].contrast / base[i].contrast : 1;
       if(ratio < 0.95) drops.push(rows[i].kind + ' ' + base[i].contrast.toFixed(3) + '→' + rows[i].contrast.toFixed(3));
     }
-    assert(drops.length === 0, sc.id + ' contrast stays within 5% of v11.4' + (drops.length ? ' (' + drops.join(', ') + ')' : ''));
+    assert(drops.length === 0, pass.name + ' ' + sc.id + ' contrast stays within 5% of v11.4' + (drops.length ? ' (' + drops.join(', ') + ')' : ''));
   }
+  if(pass.gfx === 1) webglPage = page;
+  else await page.close();
+  }
+  page = webglPage;
 
   const hud = await page.evaluate(async () => {
     const G = window.FANTOR;
@@ -274,7 +289,7 @@ async function main(){
   lite.on('pageerror', e => liteErr.push(String(e.message || e)));
   await lite.setViewport({ width: 1100, height: 700, deviceScaleFactor: 1 });
   await lite.evaluateOnNewDocument(() => {
-    localStorage.setItem('fantor.settings', JSON.stringify({ music: 0, voice: 0, sfx: 0, timer: 0, gfx: 2, depth: 1 }));
+    localStorage.setItem('fantor.settings', JSON.stringify({ music: 0, voice: 0, sfx: 0, timer: 0, gfx: 3, depth: 1, gv: 1 }));
   });
   await lite.goto(`http://127.0.0.1:${PORT}/?mute&god&clean&auto&lowres`, { waitUntil: 'domcontentloaded', timeout: 60000 });
   await lite.waitForFunction(() => window.FANTOR && window.FANTOR.state === 'play', { timeout: 30000 });
