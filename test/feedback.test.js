@@ -532,8 +532,12 @@ async function clarityChecks(browser){
     P.x = 208; P.vx = 0; P.y = d.A().d.gy(208); P.ground = true;
   });
   await sleep(250);
-  const byHim = await page.evaluate(() => ({ folk: window.fantorTest.folk().find(f => f.name==='Gruff'), heard: window.fantorTest.heard().includes('n01') }));
-  assert(byHim.folk && byHim.folk.said && byHim.heard, 'Gruff speaks once you are standing by him');
+  const byHim = await page.evaluate(() => {
+    const folk = window.fantorTest.folk().find(f => f.name==='Gruff');
+    const lined = window.fantorTest.heard().includes('n01') || window.fantorTest.queue().includes('n01');
+    return { said: !!(folk&&folk.said), lined };
+  });
+  assert(byHim.said && byHim.lined, 'Gruff speaks once you are standing by him');
 
   await page.evaluate(() => {
     const d = window.fantorDebug, P = d.P();
@@ -543,6 +547,7 @@ async function clarityChecks(browser){
   const hint = await page.evaluate(() => window.fantorTest.hint());
   assert(hint && hint.key==='lives' && hint.wait==='jump', 'the jump hint waits until the lives hint is done ('+JSON.stringify(hint)+')');
 
+  await page.waitForFunction(() => window.fantorTest.heard().includes('01'), { timeout: 5000 });
   await page.evaluate(() => window.fantorDebug.tp(700));
   await sleep(400);
   const pit = await page.evaluate(() => ({ lift: window.fantorTest.subLift(), box: window.fantorTest.subBox(2, window.fantorTest.subLift()) }));
@@ -606,6 +611,20 @@ async function clarityChecks(browser){
   assert(await page.evaluate(() => window.fantorDebug.state().menu===true), 'a blur with no resize stays paused');
   assert(errors.length===0, 'no page errors in the clarity checks ('+(errors[0]||'none')+')');
   await page.close();
+
+  // A line queued behind a delay has not been heard. Dropping that queue on a retry must not burn it.
+  const queued = await boot(browser);
+  await queued.page.focus('canvas#game');
+  await queued.page.keyboard.press('Enter');
+  await queued.page.waitForFunction(() => window.FANTOR.state==='play' && window.fantorTest.queue().includes('01'), { timeout: 10000 });
+  const waiting = await queued.page.evaluate(() => ({ heard: window.fantorTest.heard().includes('01'), queue: window.fantorTest.queue().includes('01') }));
+  assert(waiting.queue && !waiting.heard, 'the opening line waits in the queue before it starts');
+  await queued.page.evaluate(() => { window.FANTOR.state='gameover'; window.FANTOR.goArea=0; window.FANTOR.goT=2; });
+  await queued.page.keyboard.press('Enter');
+  await queued.page.waitForFunction(() => window.FANTOR.state==='play', { timeout: 10000 });
+  const again = await queued.page.evaluate(() => ({ heard: window.fantorTest.heard().includes('01'), queue: window.fantorTest.queue().includes('01') }));
+  assert(again.queue && !again.heard, 'a line that never started can play on the retry');
+  await queued.page.close();
 }
 
 (async () => {

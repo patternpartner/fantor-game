@@ -176,10 +176,11 @@ function stopMusic(fade=2){ if(!ac||!musCur) return; const t=ac.currentTime,o=mu
 // narration queue
 const vo={queue:[],cur:null,sub:'',subA:0,gap:0,heard:new Set()};
 function say(id,opt={}){
-  if(!opt.again && vo.heard.has(id)) return; vo.heard.add(id);
+  // Heard means the line started. A line still waiting can be asked for again after the queue is dropped.
+  if(!opt.again && (vo.heard.has(id) || (vo.cur&&vo.cur.id===id) || vo.queue.some(q=>q.id===id))) return;
   vo.queue.push({id,delay:opt.delay||0,cb:opt.cb});
 }
-function sayNow(id){ vo.heard.add(id); vo.queue.length=0; if(vo.cur){ try{ vo.cur.src&&vo.cur.src.stop(); }catch(_){} const c=vo.cur; vo.cur=null; if(c.cb) c.cb(); } vo.gap=0; vo.queue.unshift({id,delay:0}); }
+function sayNow(id){ vo.queue.length=0; if(vo.cur){ try{ vo.cur.src&&vo.cur.src.stop(); }catch(_){} const c=vo.cur; vo.cur=null; if(c.cb) c.cb(); } vo.gap=0; vo.queue.unshift({id,delay:0}); }
 function voUpdate(dt,now){
   if(vo.cur){ if(now>=vo.cur.end){ const c=vo.cur; vo.cur=null; vo.gap=0.5; if(c.cb) c.cb(); } }
   if(!vo.cur){ if(vo.gap>0){vo.gap-=dt;} else if(vo.queue.length){ const q=vo.queue[0]; if(q.delay>0){q.delay-=dt;} else { vo.queue.shift(); startLine(q,now);} } }
@@ -188,6 +189,7 @@ function voUpdate(dt,now){
   if(ac&&musG){ const target=(vo.cur?0.30:0.55)*SET.music*(1-duckK); musG.gain.setTargetAtTime(target,ac.currentTime,duckK>0?0.05:0.25); } // v9: the music ducks under a hit or a stone waking, so they land
 }
 function startLine(q,now){
+  vo.heard.add(q.id); // v11.3: only a line that starts is heard. A discarded queue does not burn it.
   const b=bufs['v_'+q.id]; let dur=2.5+(LINES[q.id]||'').length*0.06;
   let src=null; if(ac&&b){ const s=ac.createBufferSource(); s.buffer=b; s.connect(voG); s.start(); dur=b.duration+0.2; src=s; }
   vo.cur={id:q.id,end:now+dur,cb:q.cb,src}; vo.sub=LINES[q.id]||'';
