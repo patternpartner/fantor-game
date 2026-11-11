@@ -967,7 +967,8 @@ function downMove(inp){
     return; }
   if(m>=6&&!P.ember&&!P.stomp&&!P.pull&&P.adT<=0){ if(P.light<1){ sfx.fizzle(); return; } P.light-=1; P.stomp=true; P.vx*=0.35; P.carry=0; P.dashT=0; P.vy=STOMP_V; sfx.stomp(); game.log.push(['move','stomp',game.areaI,P.x|0]); }
 }
-function bounce(){ P.vy=-BOUNCE_V; P.stomp=false; P.airDash=true; P.inv=0.25; P.ground=false; P.plat=null; sfx.bounce(); game.shake=Math.max(game.shake,0.12);
+function leaveGround(){ if(P.ground||!(P.airSince>0)) P.airSince=game.t; P.ground=false; } // the touch "up" gate reads this clock: a later jump press is after you left the ground
+function bounce(){ P.vy=-BOUNCE_V; P.stomp=false; P.airDash=true; P.inv=0.25; leaveGround(); P.plat=null; sfx.bounce(); game.shake=Math.max(game.shake,0.12);
   for(let i=0;i<10;i++){ const a=Math.PI*(0.1+0.8*i/9); A.particles.push({x:P.x,y:P.y,vx:Math.cos(a)*90,vy:Math.sin(a)*40,life:0.4,t:0,gold:1}); } }
 // v11.4: a jump landing on a small walker. Not a star-fall (that one costs light and works on anything).
 // Side-on is still a hit. Wisps, flyers, spitters, throwers, spears, stalkers and bosses are not stepped on.
@@ -987,7 +988,7 @@ function headStomp(prevY,ny){
 }
 function doHeadStomp(e){
   e.hp=0; e.hit=0.4; calmEnemy(e);
-  P.vy=-HOP_V; P.ground=false; P.plat=null; P.inv=0.3; P.carry=0; P.airDash=true;
+  P.vy=-HOP_V; leaveGround(); P.plat=null; P.inv=0.3; P.carry=0; P.airDash=true;
   sfx.bounce();
   for(let i=0;i<6;i++){ const a=Math.PI*(0.15+0.7*i/5); A.particles.push({x:P.x,y:e.y-e.h,vx:Math.cos(a)*50,vy:Math.sin(a)*22,life:0.35,t:0,gold:1}); }
   game.log.push(['headstomp',game.areaI,e.spr||e.t,P.x|0]);
@@ -1000,13 +1001,13 @@ function stompCheck(prevY){
 }
 function stepPull(dt){
   const p=P.pull, l=p.l; p.t+=dt; const tx=l.x, ty=l.y+56; const dx=tx-P.x, dy=ty-P.y, dd=Math.hypot(dx,dy);
-  if(dd<=PULL_V*dt||p.t>0.9){ P.x=tx; P.y=ty; P.pull=null; P.lastPull=l; P.vx=(Math.sign(dx)||P.face)*160; P.vy=-230; P.ground=false; P.plat=null; P.airDash=true; P.coy=0; P.carry=0;
+  if(dd<=PULL_V*dt||p.t>0.9){ P.x=tx; P.y=ty; P.pull=null; P.lastPull=l; P.vx=(Math.sign(dx)||P.face)*160; P.vy=-230; leaveGround(); P.plat=null; P.airDash=true; P.coy=0; P.carry=0;
     sfx.lantern(); for(let i=0;i<10;i++){ const a=i/10*TAU; A.particles.push({x:l.x,y:l.y+4,vx:Math.cos(a)*70,vy:Math.sin(a)*70,life:0.5,t:0,gold:1}); }
     // a lit lantern passes its light to the next dark one along the chain
     for(const o of A.hang) if(!o.lit&&!o.gut&&!o.hidden&&o!==l&&Math.abs(o.x-l.x)<185&&Math.abs(o.y-l.y)<90){ o.lit=true; o.t=0; sfx.lantern(); }
     if(l.hidden) enterSecret(3);
     return; }
-  P.vx=dx/dd*PULL_V; P.vy=dy/dd*PULL_V; P.x+=P.vx*dt; P.y+=P.vy*dt; if(Math.abs(dx)>2) P.face=Math.sign(dx); P.ground=false; P.plat=null;
+  P.vx=dx/dd*PULL_V; P.vy=dy/dd*PULL_V; P.x+=P.vx*dt; P.y+=P.vy*dt; if(Math.abs(dx)>2) P.face=Math.sign(dx); leaveGround(); P.plat=null;
   if(Math.random()<0.6) A.particles.push({x:P.x,y:P.y-30,vx:-P.vx*0.05,vy:-P.vy*0.05,life:0.3,t:0,gold:1});
 }
 function stepPlayer(dt,inp){
@@ -1032,7 +1033,7 @@ function stepPlayer(dt,inp){
   }
   if(P.hurtT>0) P.hurtT-=dt;
   P.coy=P.ground?0.1:P.coy-dt; P.buf=inp.jp?0.13:P.buf-dt;
-  if(P.ctrl&&!P.dead&&P.buf>0&&P.coy>0&&P.adT<=0){ P.vy=-JV*(P.ember?0.9:1); P.ground=false; P.coy=0; P.buf=0; P.plat=null; P.kneel=0; P.airSince=game.t; sfx.jump();
+  if(P.ctrl&&!P.dead&&P.buf>0&&P.coy>0&&P.adT<=0){ P.vy=-JV*(P.ember?0.9:1); leaveGround(); P.coy=0; P.buf=0; P.plat=null; P.kneel=0; sfx.jump();
     if(P.dashT>0||P.dashG>0){ P.carry=P.dashDir*CARRY_V; P.dashT=0; P.dashG=0; } }
   if(!inp.j&&P.vy<-120&&P.adT<=0&&!P.stomp) P.vy+= GRAV*1.4*dt; // variable jump height
   if(P.adT<=0){ P.vy+=GRAV*dt; if(P.vy>800) P.vy=800; }
@@ -1053,7 +1054,7 @@ function stepPlayer(dt,inp){
     if(P.stomp){ P.stomp=false; game.shake=Math.max(game.shake,0.15); }
     ny=fy; P.vy=0; P.ground=true; P.plat=plat; P.carry=0; P.airDash=true; P.adT=0; P.lastPull=null; P.airSince=0; P.jumpT=0; if(plat&&plat.rot&&!plat.rt){ plat.rt=0.001; sfx.creak(); } }
   else if(P.ground&&P.vy>=0&&fy-ny<14&&fy>ny){ ny=fy; P.vy=0; P.plat=plat; }
-  else { if(P.ground) P.airSince=game.t; P.ground=false; P.plat=null; }
+  else { leaveGround(); P.plat=null; }
   P.y=ny;
   if(P.stomp&&P.vy>0) stompCheck(prev);
   if(P.ground&&!plat&&d.gy(P.x)<1e8){ let nearGap=false; for(const g of d.gaps) if(P.x>g[0]-50&&P.x<g[1]+30) nearGap=true; if(!nearGap) P.safeX=P.x; }
@@ -1213,7 +1214,7 @@ function grantMove(ai){ if(ai>5||(game.moves|0)>ai) return; game.moves=ai+1; set
 function hurt(src,amt){
   if(P.hurtT>0||P.inv>0||P.dead>0||game.state!=='play') return;
   game.stats.hits++; P.dashT=0; P.dashG=0; P.adT=0; P.carry=0; P.stomp=false; P.pull=null; P.kneel=0; if(P.ember) dropEmber();
-  P.hurtT=1.0; P.vx=Math.sign(P.x-src.x||-P.face)*240; P.vy=-200; P.ground=false; P.plat=null; sfx.hurt(); game.flash=0.35; game.shake=Math.max(game.shake,0.18); game.stop=Math.max(game.stop,0.05);
+  P.hurtT=1.0; P.vx=Math.sign(P.x-src.x||-P.face)*240; P.vy=-200; leaveGround(); P.plat=null; sfx.hurt(); game.flash=0.35; game.shake=Math.max(game.shake,0.18); game.stop=Math.max(game.stop,0.05);
   game.log.push(['hit',game.areaI,P.x|0,amt,P.light]);
   if(GOD) return;
   if(P.light<=0){ loseLife('hit'); return; }
@@ -1590,7 +1591,7 @@ function updateWorld(dt){
     if(p.mx){ const nx=p.x0+p.mx*(0.5-0.5*Math.cos(now*TAU/p.per)); p.dx=nx-p.x; p.x=nx; } else p.dx=0;
     if(p.my){ const ny=p.y0-p.my*(0.5-0.5*Math.cos(now*TAU/p.per)); p.dy=ny-p.y; p.y=ny; } else p.dy=0;
     // v5: rotten branches and sinking stones: once stood on, they go after a moment (they creak and shake first)
-    if(p.rot){ if(p.rt>0&&!p.off){ p.rt+=dt; if(p.rt>p.rot){ p.off=1; p.ot=0; sfx.crack(); if(P.plat===p){ P.plat=null; P.ground=false; } } }
+    if(p.rot){ if(p.rt>0&&!p.off){ p.rt+=dt; if(p.rt>p.rot){ p.off=1; p.ot=0; sfx.crack(); if(P.plat===p){ P.plat=null; leaveGround(); } } }
       if(p.off){ p.ot+=dt; p.dy=dt*(60+p.ot*700); p.y+=p.dy; if(p.ot>3.0&&P.plat!==p){ p.off=0; p.rt=0; p.y=p.y0; p.dy=0; } } } }
   // motes drift toward the sun-head and are gathered
   for(const m of A.motes){ if(m.got) continue; m.ph+=dt*2; if(m.born!==undefined) m.born+=dt;
@@ -1694,7 +1695,7 @@ function updateWorld(dt){
   for(const b of A.bells){ if(b.sw) b.x=b.x0+b.sw*Math.sin((now+(b.ph||0))*TAU/b.per); if(b.ring>0) b.ring-=dt;
     if(b.toll){ const [per,ph]=b.toll; const t=((now+ph)%per+per)%per; b.warn=t>per-0.8; if(b.warn&&!b.hum&&Math.abs(b.x-P.x)<W*0.7){ b.hum=1; sfx.hum(); }
       if(t<b.lastT&&b.lastT<1e8){ b.hum=0; b.ring=0.9; A.rings.push({x:b.x,y:b.y,r:8,R:95,t:0}); sfx.toll(); game.shake=Math.max(game.shake,0.15);
-        if(live&&Math.hypot(P.x-b.x,(P.y-27)-b.y)<95){ P.vx=Math.sign(P.x-b.x||1)*260; P.vy=Math.min(P.vy,-140); P.ground=false; P.plat=null; P.knockT=0.45; P.carry=0; P.adT=0; P.stomp=false; P.dashT=0; } }
+        if(live&&Math.hypot(P.x-b.x,(P.y-27)-b.y)<95){ P.vx=Math.sign(P.x-b.x||1)*260; P.vy=Math.min(P.vy,-140); leaveGround(); P.plat=null; P.knockT=0.45; P.carry=0; P.adT=0; P.stomp=false; P.dashT=0; } }
       b.lastT=t; } }
   // v5: carried fire goes out at a boss's arena (the dark there takes it), and the stones' gates never leave you stuck
   if(P.ember&&A.boss&&!A.boss.calm&&P.x>A.boss.a0-20) dropEmber();

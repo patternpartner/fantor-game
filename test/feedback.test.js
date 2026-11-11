@@ -853,6 +853,41 @@ async function v114Checks(browser){
   await sleep(100);
   const aimed = await touch.page.evaluate(() => ({ v:window.fantorDebug.P().adV.slice(), t:window.fantorDebug.P().adT, jt:window.fantorDebug.P().jumpT, as:window.fantorDebug.P().airSince }));
   assert(aimed.t>0 && aimed.v[1]<0, 'a second jump press aims the dash up and forward ('+JSON.stringify(aimed)+')');
+  const pulled = await touch.page.evaluate(() => new Promise(resolve => {
+    const fire=(id,type,pid)=>document.getElementById(id).dispatchEvent(new PointerEvent(type,{bubbles:true,cancelable:true,pointerId:pid,pointerType:'touch'}));
+    for(const id of ['bj','br','bu','bl']) for(let pid=1; pid<=16; pid++){ fire(id,'pointerup',pid); fire(id,'pointercancel',pid); }
+    const d = window.fantorDebug, P = d.P(), A = d.A();
+    d.moves(3); d.setLight(12);
+    const x = 280, gy = A.d.gy(x);
+    P.x = x; P.y = gy; P.ground = true; P.vy = 0; P.vx = 0; P.ctrl = true; P.face = 1;
+    P.airDash = true; P.adT = 0; P.adV = [0,0]; P.jumpT = 0; P.airSince = 0; P.pull = null; P.coy = 0; P.lastPull = null;
+    A.hang.push({x:x+30, y:gy-160, lit:1, t:0});
+    window.FANTOR.timeScale = 0.2;
+    const begun = window.FANTOR.log.filter(r => r[0]==='move' && r[1]==='adash').length;
+    const t0 = performance.now();
+    let sawPull = false;
+    requestAnimationFrame(() => fire('bu','pointerdown',11));
+    function tick(){
+      const Q = d.P();
+      if(Q.pull) sawPull = true;
+      if(sawPull && !Q.pull && Q.ground===false && Q.airSince>0){
+        fire('bu','pointerup',11);
+        fire('bj','pointerdown',12);
+        fire('br','pointerdown',13);
+        fire('bu','pointerdown',14);
+        window.FANTOR.timeScale = 1;
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          const R = d.P();
+          resolve({ v:R.adV.slice(), as:R.airSince, jt:R.jumpT, n:window.FANTOR.log.filter(r => r[0]==='move' && r[1]==='adash').length-begun, ground:R.ground });
+        }));
+        return;
+      }
+      if(performance.now()-t0>8000){ window.FANTOR.timeScale = 1; resolve({ timeout:true, ground:Q.ground, pull:!!Q.pull, as:Q.airSince, sawPull }); }
+      else requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }));
+  assert(!pulled.timeout && pulled.n>=1 && pulled.v[1]<0 && pulled.as>0 && pulled.jt>=pulled.as, 'after a ground lantern pull, a second jump press aims the dash up ('+JSON.stringify(pulled)+')');
   await touch.page.close();
 
   console.log('v11.4 two endings');
