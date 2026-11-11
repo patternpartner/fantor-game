@@ -1,6 +1,6 @@
 /* v12.1 renderer foundation.
    The canvas path is the fallback: no WebGL, a lost context, ?classic, ?nowebgl.
-   Auto steps resolution before it steps Ultra → High → Light.
+   Auto steps 2 → 1.5 → 1.25 → 1 before it steps Ultra → High → Light.
    The same play-layer boxes come back from both renderers.
 */
 'use strict';
@@ -175,8 +175,8 @@ async function main(){
   function nextDown(rs, tier){
     if(rs > 1.5 + 1e-3) return { rs: 1.5, tier };
     if(rs > 1.25 + 1e-3) return { rs: 1.25, tier };
-    if(tier < 3) return { rs, tier: tier + 1 };
     if(rs > 1 + 1e-3) return { rs: 1, tier };
+    if(tier < 3) return { rs, tier: tier + 1 };
     return null;
   }
   assert(ladder[0].gfx === 0 && ladder[0].tier === 1 && ladder[0].rs >= 1, 'auto starts at Ultra (' + JSON.stringify(ladder[0]) + ')');
@@ -190,6 +190,10 @@ async function main(){
       exp = want;
     }
   }
+  const steps = ladder.slice(1, 7);
+  const firstTierDrop = steps.find(s => s.tier > 1);
+  assert(firstTierDrop && firstTierDrop.rs === 1, 'Auto reaches RS 1 before it lowers a tier' + (firstTierDrop ? ' (RS ' + firstTierDrop.rs + ', tier ' + firstTierDrop.tier + ')' : ''));
+  assert(steps.filter(s => s.tier > 1).every(s => s.rs === 1), 'every tier drop stays at RS 1');
   assert(exp.tier === 3 && exp.rs === 1, 'the ladder ends at Light and RS 1');
   assert(ladder[7].tier === 4 && ladder[7].gl === 'classic', 'Classic is the canvas path');
   assert(ladder[8].tier === 3 && ladder[8].lite === 1, 'Light is the lite tier');

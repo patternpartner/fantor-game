@@ -2498,10 +2498,9 @@ function applyGfx(n){
 function glLabel(){ if(!glOn()) return 'classic'; return glState==='webgl2'||glState==='webgl1'?glState:'pending'; }
 function perfStepDown(){
   const before=RS+':'+autoTier+':'+rsDrop;
-  if(RS>1.5+1e-3){ rsDrop++; fit(); }
-  else if(RS>1.25+1e-3){ rsDrop++; fit(); }
+  // Resolution all the way to 1 (2 → 1.5 → 1.25 → 1) before a tier change.
+  if(RS>1+1e-3){ rsDrop++; fit(); }
   else if(autoTier<3){ autoTier++; syncArt(); }
-  else if(RS>1+1e-3){ rsDrop++; fit(); }
   return before!==(RS+':'+autoTier+':'+rsDrop);
 }
 function perfWatch(rdt){ if(AUTO||SET.gfx||game.state!=='play'||game.paused||atPerfFloor()) return; perfT+=rdt; perfN++; perfS+=rdt; // a 2 s window of play, then one step
