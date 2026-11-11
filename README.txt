@@ -1,4 +1,4 @@
-FANTOR - The Wanderer's Light (v12.0)
+FANTOR - The Wanderer's Light (v12.1)
 A punishing old-school platformer set in the world of "The Road to Fantor". Every backdrop and
 character comes from Eh AyeC's "Fantor's Long War" collection: AI-generated images, created and
 curated by the artist (see CHARACTERS.md). The code was written with an AI coding assistant.
@@ -12,7 +12,7 @@ Browsers block games opened straight from a file, so serve the folder:
 then open http://localhost:8000/ . It also works from any static web host or itch.io.
 
 The file the page loads is game.js (minified, no debug hooks). The source it is built from
-is src/game.js, still one file, plain canvas and WebAudio. To rebuild after editing the source:
+is src/game.js, still one file: canvas, WebAudio, and a WebGL compositor with a canvas fallback. To rebuild after editing the source:
   npm install
   npm run build          (node tools/build.js)
   npm test               (needs Chrome; checks the labels, the death marks, the shore painting,
@@ -37,7 +37,7 @@ CONTROLS
   Mouse:    click the game first so it gets the keyboard (in an embed).
             The two small buttons at the top are Menu and Fullscreen.
   Phone (landscape): the on-screen buttons.
-  The pause menu has Music, Voice and Effects volume, a Timer switch, Graphics (Auto, Full, or Light for slow machines) and Depth (Layers, or Off for the older flat paintings). Settings and best times
+  The pause menu has Music, Voice and Effects volume, a Timer switch, Graphics (Auto, Ultra, High, Light, or Classic) and Depth (Layers, or Off for the older flat paintings). Settings and best times
   are remembered in this browser (if the browser allows storage; if not, the game still runs).
 
 LIVES (old school, no mercy)
@@ -68,6 +68,7 @@ Motes refill this same light, up to 40.
 
 URL OPTIONS
   ?mute  no sound     ?lowres  never render above 854x480
+  ?classic  canvas only, no WebGL     ?perf  a small timing line (frame, backdrop, play, upload, post)
 
 THE LONG NIGHT
   Finish the journey carrying everything the sea forgot, and the title screen offers The Long Night
@@ -97,6 +98,18 @@ KEEP THIS CARD
   journeys, furthest, where the light has gone out, and a small honest credit. On a phone the line says to tap it.
   The walking buttons step aside on those screens so the tap can land. If your browser or the embed does not
   allow the download, press G (or tap) again within a few seconds and it opens in a new tab instead.
+
+v12.1 "Renderer foundation":
+  - The lands can draw through WebGL2 (WebGL1 where that is all the browser has). The same canvas
+    drawing still paints the ground, the hazards and the figures. Those pixels are uploaded and laid
+    over the painting. If WebGL is missing, the context is lost, or Graphics is Classic, the canvas
+    path draws the frame on its own.
+  - Auto, Ultra, High, Light and Classic. Auto lowers the resolution (2, then 1.5, then 1.25, then 1)
+    and then the tier, one step at a time, when a frame stays over 18 ms. It never changes the 60 Hz step.
+  - On Ultra and High the painting shifts per pixel from its depth map, a small vertical drift with the
+    camera, and a breath that is stronger on the near pixels. Light and Classic keep the canvas layers.
+  - Nothing about the journey changed: the same physics, the same hits, the same lives, the same restarts.
+  - ?perf shows the pass times. Lighting, bloom and grade have a place in the shader and are still off.
 
 v12.0 "Clean canvas":
   - The paintings are cut into depth layers, so the near shore, the crowd and the cloak move against

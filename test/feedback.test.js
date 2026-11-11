@@ -63,7 +63,7 @@ function sourceChecks(){
   assert(SRC.includes('function gainLight'), 'collected light goes into the shine pool');
   assert(SRC.includes('function tryCover'), 'crouching behind a rock can cover a shot');
   assert(SRC.includes("k:'rock',cover:1"), 'the King of Bell arena has a cover stone');
-  assert(SRC.includes('v12.0') && !SRC.includes("'v11.4'") && !SRC.includes('"v11.4"') && !SRC.includes('v11.3'), 'the source is marked v12.0');
+  assert(SRC.includes('v12.1') && !SRC.includes('v12.0') && !SRC.includes("'v11.4'") && !SRC.includes('"v11.4"') && !SRC.includes('v11.3'), 'the source is marked v12.1');
   assert(!SRC.includes('vo.heard.clear'), 'a retry keeps narration already heard this sitting');
   assert(SRC.includes('again:true'), 'the game-over line can still be said again');
   assert(SRC.includes("AGAIN=new Set(['17','18','19','20','21','22','23','g06','g07','ln2','nx1','sx1','bw2'])"), 'the story and ending lines play again');
@@ -499,7 +499,7 @@ async function prodChecks(browser){
   assert(!built.includes("Q.has('auto')") && !built.includes('has("auto")'), 'the shipped file has no autopilot switch');
   assert(built.includes('was struck') && !built.includes('struck down'), 'the shipped card says "was struck"');
   assert(built.includes('lights out') && !built.includes('all journeys'), 'the shipped strip says "lights out"');
-  assert(built.includes('v12.0') && !built.includes('v11.4') && !built.includes('v11.3'), 'the shipped build is marked v12.0');
+  assert(built.includes('v12.1') && !built.includes('v12.0') && !built.includes('v11.4') && !built.includes('v11.3'), 'the shipped build is marked v12.1');
   const { page, errors } = await boot(browser, 'game.js');
   await page.waitForFunction(() => {
     const c = document.getElementById('game');

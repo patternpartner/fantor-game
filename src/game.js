@@ -1,15 +1,22 @@
-/* FANTOR · The Wanderer's Light  (v12.0)
+/* FANTOR · The Wanderer's Light  (v12.1)
    A small side-scrolling journey through the AI-generated art of "The Road to Fantor",
    with characters cut from Eh AyeC's Fantor collections on Fine Art America.
-   Plain canvas + WebAudio, no dependencies.
+   Canvas 2D and WebAudio, plus a WebGL2 compositor (WebGL1 where that is all the
+   browser has). No WebGL, a lost context, or Classic in the menu: the canvas path.
+   No dependencies.
    Source of the build: this file. tools/build.js writes the minified game.js. */
 'use strict';
 (function(){
 const W=854, H=480;                       // VHS-ish 480 lines
-const cv=document.getElementById('game'), cx=cv.getContext('2d');
+const cv=document.getElementById('game');
+let cx=cv.getContext('2d');
+const gameCx=cx;
+const playCv=document.createElement('canvas'); playCv.width=W; playCv.height=H;
+const playCx=playCv.getContext('2d',{alpha:true});
 const hud=document.getElementById('hud'), hx=hud.getContext('2d');
 let pen=cx; // text and the HUD overlay. The world keeps drawing on cx.
 const Q=new URLSearchParams(location.search);
+const perfOn=Q.has('perf');
 /*@DEV*/const AUTO=Q.has('auto'), DEBUG=Q.has('debug'), START_AREA=+(Q.get('area')||0), MUTE=Q.has('mute');
 let GOD=Q.has('god');            // debug invincibility (used by the autopilot tests)
 /*@/DEV*/
@@ -21,16 +28,25 @@ const clamp=(v,a,b)=>v<a?a:v>b?b:v, lerp=(a,b,t)=>a+(b-a)*t, sm=t=>t*t*(3-2*t);
 function rngf(seed){let s=seed>>>0||1;return()=>{s^=s<<13;s>>>=0;s^=s>>17;s^=s<<5;s>>>=0;return s/4294967296;};}
 
 /* ---------------- layout / resize ---------------- */
-let RS=1, artOn=false, vigRS=-1; // backing-store scale. 1920 paintings are used when this is 1.5 or 2.
+let RS=1, artOn=false, vigRS=-1, rsDrop=0, autoTier=1, glState='init', glFailed=false, glImgTex=null, glPara=0; // backing-store scale. 1920 paintings are used when this is 1.5 or 2.
+// Auto may step the backing store 2 → 1.5 → 1.25 → 1 before it steps the effect tier. rsDrop is only raised while Auto is on.
+function chooseRS(){
+  const vw=Math.max(1,innerWidth), vh=Math.max(1,innerHeight), s=Math.min(vw/W,vh/H);
+  const want=s*(window.devicePixelRatio||1);
+  let rs=Q.has('lowres')?1:want>1.75?2:want>1.2?1.5:1;
+  if(!Q.has('lowres')&&rsDrop>0){ const ladder=rs>=2?[2,1.5,1.25,1]:rs>=1.5?[1.5,1.25,1]:[rs]; rs=ladder[Math.min(rsDrop,ladder.length-1)]; }
+  return rs;
+}
 function fit(){const vw=Math.max(1,innerWidth), vh=Math.max(1,innerHeight), s=Math.min(vw/W,vh/H);
   const cssW=Math.floor(W*s), cssH=Math.floor(H*s);
   cv.style.width=cssW+'px'; cv.style.height=cssH+'px';
   if(hud){ hud.style.width=cssW+'px'; hud.style.height=cssH+'px';
     const dpr=window.devicePixelRatio||1, hw=Math.max(1,Math.round(cssW*dpr)), hh=Math.max(1,Math.round(cssH*dpr));
     if(hud.width!==hw||hud.height!==hh){ hud.width=hw; hud.height=hh; } }
-  const want=s*(window.devicePixelRatio||1); const rs=Q.has('lowres')?1:want>1.75?2:want>1.2?1.5:1;
+  const rs=chooseRS();
   if(rs!==RS||cv.width!==Math.round(W*rs)){ RS=rs; cv.width=Math.round(W*RS); cv.height=Math.round(H*RS); vigRS=-1; if(artOn) syncArt(); }}
 addEventListener('resize',()=>{ fit(); noteLayout(); }); fit();
+if(Q.has('classic')||Q.has('nowebgl')) glState='classic';
 function base(){ cx.setTransform(RS,0,0,RS,0,0); }
 function hudPrepare(){ if(!hud) return; hx.setTransform(hud.width/W,0,0,hud.height/H,0,0); hx.globalAlpha=1; hx.globalCompositeOperation='source-over'; hx.clearRect(0,0,W,H); }
 
@@ -122,8 +138,9 @@ const LINES={
 };
 
 /* ---------------- settings ---------------- */
-const SET={music:0.8,voice:1,sfx:0.8,timer:0,gfx:0,depth:1}; // depth 1: painting layers. 0: the old flat bands.
-try{ const j=JSON.parse(localStorage.getItem('fantor.settings')||'null'); if(j) for(const k in SET) if(typeof j[k]==='number'&&j[k]>=0&&j[k]<=(k==='gfx'?2:k==='depth'?1:1)) SET[k]=k==='gfx'||k==='depth'?j[k]|0:j[k]; }catch(_){}
+const SET={music:0.8,voice:1,sfx:0.8,timer:0,gfx:0,depth:1,gv:1}; // gfx: 0 auto, 1 ultra, 2 high, 3 light, 4 classic. depth 1: layers (and, on GL, per-pixel parallax). gv marks a v12.1 save.
+try{ const j=JSON.parse(localStorage.getItem('fantor.settings')||'null'); if(j){ if(!(j.gv>0)&&j.gfx===2) j.gfx=3; // a save from before five tiers stored Light as 2
+  for(const k in SET) if(k!=='gv'&&typeof j[k]==='number'&&j[k]>=0&&j[k]<=(k==='gfx'?4:k==='depth'?1:1)) SET[k]=(k==='gfx'||k==='depth')?j[k]|0:j[k]; } }catch(_){}
 if(Q.has('flat')) SET.depth=0;
 function saveSettings(){ try{ localStorage.setItem('fantor.settings',JSON.stringify(SET)); }catch(_){} }
 function applyVolumes(){ if(!ac) return; voG.gain.value=1.0*SET.voice; sfxG.gain.value=0.5*SET.sfx; }
@@ -325,7 +342,7 @@ function bands(n){
 }
 function dropBands(keep){ for(const k in bandCache){ const base=k.replace('@1920',''); if(!keep.includes(base)) delete bandCache[k]; } }
 function artFiles(names){ const files=[]; for(const n of names){ if(PACK[n]&&wantLayers()) for(const L of PACK[n].layers) files.push(n+'_'+L.id); if(PACK[n]&&wantHi()) files.push(n+'@1920'); } return files; }
-function dropArt(keep){ const s=new Set(keep); for(const k in IMG) if((k.indexOf('@1920')>0||/_L\d$/.test(k))&&!s.has(k)) delete IMG[k]; }
+function dropArt(keep){ const s=new Set(keep); for(const k in IMG) if((k.indexOf('@1920')>0||/_L\d$/.test(k))&&!s.has(k)){ if(glImgTex&&IMG[k]){ const t=glImgTex.get(IMG[k]); if(t&&glAlive()) gl.deleteTexture(t); glImgTex.delete(IMG[k]); } delete IMG[k]; } }
 const artLoads={};
 function ensureArt(names){
   if(!artOn) return;
@@ -333,6 +350,17 @@ function ensureArt(names){
   dropBands(uniq); const files=artFiles(uniq); dropArt(files);
   for(const f of files) if(!IMG[f]&&!artLoads[f]) artLoads[f]=loadImg(f).then(()=>{ delete artLoads[f]; },()=>{ delete artLoads[f]; });
   for(const n of uniq) if(IMG[n]&&!(wantLayers()&&PACK[n])) bands(n);
+  ensureDepth(uniq);
+}
+// Per-pixel parallax reads the depth maps G1 derived (0 far .. 1 near). Ultra and High only.
+const DEPTH={}; const depthLoads={};
+function wantDepth(){ if(!artOn||SET.depth===0||Q.has('flat')||Q.has('classic')||Q.has('nowebgl')||glFailed||glState==='classic') return false; const t=activeTier(); return t===1||t===2; }
+function ensureDepth(names){
+  if(!wantDepth()){ for(const k in DEPTH){ if(glImgTex&&DEPTH[k]){ const t=glImgTex.get(DEPTH[k]); if(t&&glAlive()) gl.deleteTexture(t); glImgTex.delete(DEPTH[k]); } delete DEPTH[k]; } return; }
+  const keep=new Set(names);
+  for(const k in DEPTH) if(!keep.has(k)){ if(glImgTex&&DEPTH[k]){ const t=glImgTex.get(DEPTH[k]); if(t&&glAlive()) gl.deleteTexture(t); glImgTex.delete(DEPTH[k]); } delete DEPTH[k]; }
+  for(const n of names){ if(!PACK[n]||DEPTH[n]||depthLoads[n]) continue; depthLoads[n]=1; const i=new Image();
+    i.onload=()=>{ DEPTH[n]=i; delete depthLoads[n]; }; i.onerror=()=>{ delete depthLoads[n]; }; i.src='tools/art/depth/'+n+'_depth.webp'; }
 }
 function artKeep(){
   const names=[];
@@ -416,7 +444,7 @@ function toggleMenu(force){
 }
 for(const k of ['music','voice','sfx']){ const el=$('m_'+k); el.addEventListener('input',()=>{ SET[k]=clamp(+el.value/100,0,1); applyVolumes(); saveSettings(); }); }
 $('m_resume').addEventListener('click',()=>toggleMenu(false));
-$('m_gfx').addEventListener('change',()=>{ SET.gfx=+$('m_gfx').value|0; saveSettings(); syncArt(); });
+$('m_gfx').addEventListener('change',()=>{ applyGfx(+$('m_gfx').value|0); });
 if($('m_depth')) $('m_depth').addEventListener('change',()=>{ SET.depth=+$('m_depth').value|0; saveSettings(); syncArt(); });
 $('m_timer').addEventListener('change',()=>{ SET.timer=$('m_timer').checked?1:0; saveSettings(); });
 $('m_fs').addEventListener('click',()=>toggleFullscreen());
@@ -1841,20 +1869,25 @@ function backdropPlan(imgs, gaps, cam){
     if(t>0){ inI=k+1; inA=sm(t); } } // the new painting fades in over the one already there, which stays opaque
   return {k,outA:1,inI,inA};
 }
-function drawBackdrop(){
+function backdropState(){
   const d=A.d, imgs=d.imgs; const cam=camX+W*0.36; const pe=paintEnv(), pz=0.005*Math.sin(game.t*0.11)+(pe?pe.c[3]*pe.e:0), spread=pe?pe.c[4]*pe.e:0;
   const dx=pe&&pe.k==='drift'?Math.sin(Math.min(1,pe.t/11)*Math.PI)*(game.paint.dir||1):0;
   const plan=backdropPlan(imgs,d.gaps,cam);
   const draws=[]; if(plan.outA>0.004) draws.push([plan.k,plan.outA]); if(plan.inI!==null&&plan.inA>0.004) draws.push([plan.inI,plan.inA]);
   if(!draws.length) draws.push([plan.k,1]);
-  for(const [i,alpha] of draws){
-    const [n,at]=imgs[i]; const end=imgs[i+1]?imgs[i+1][1]:d.len; const p=clamp((cam-at+390)/(end-at+390),0,1);
+  return {d,imgs,cam,pe,pz,spread,dx,draws};
+}
+function paintWash(pe){ if(pe&&pe.c[6]){ cx.save(); cx.globalCompositeOperation='lighter'; cx.fillStyle=`rgba(${pe.c[5]},${(pe.c[6]*pe.e).toFixed(3)})`; cx.fillRect(0,0,W,H); cx.restore(); } }
+function drawBackdrop(){
+  const s=backdropState();
+  for(const [i,alpha] of s.draws){
+    const [n,at]=s.imgs[i]; const end=s.imgs[i+1]?s.imgs[i+1][1]:s.d.len; const p=clamp((s.cam-at+390)/(end-at+390),0,1);
     cx.globalAlpha=alpha;
-    if(wantLayers()&&layersReady(n)) drawLayers(n,p,pz,dx,spread,pe);
-    else drawBands(n,p,pz,dx,spread,pe); // v10: the drift never shows a layer's edge. x1–x8 stay on this path.
+    if(wantLayers()&&layersReady(n)) drawLayers(n,p,s.pz,s.dx,s.spread,s.pe);
+    else drawBands(n,p,s.pz,s.dx,s.spread,s.pe); // v10: the drift never shows a layer's edge. x1–x8 stay on this path.
   }
   cx.globalAlpha=1;
-  if(pe&&pe.c[6]){ cx.save(); cx.globalCompositeOperation='lighter'; cx.fillStyle=`rgba(${pe.c[5]},${(pe.c[6]*pe.e).toFixed(3)})`; cx.fillRect(0,0,W,H); cx.restore(); }
+  paintWash(s.pe);
 }
 // Every layer of one painting shares one scale (the manifest's 1.16) so an edge is never drawn twice.
 function drawLayers(n,p,pz,dx,spread,pe){
@@ -2449,10 +2482,39 @@ function drawAir(){ // v7: depth: slow light shafts by day, a low drifting mist 
 const blm=document.createElement('canvas'); blm.width=Math.round(W/4); blm.height=Math.round(H/4); const blx=blm.getContext('2d');
 let BLOOM=true, blmN=0, HUMAN=false; /*@DEV*/ HUMAN=Q.has('human'); /*@/DEV*/ /*@DEV*/ if(Q.has('nobloom')) BLOOM=false; /*@/DEV*/
 const hal=document.createElement('canvas'); hal.width=Math.round(W/2); hal.height=Math.round(H/2); const hlx=hal.getContext('2d');
-let LITE=false, perfT=0, perfN=0, perfS=0; // v9: graphics quality. SET.gfx: 0 auto, 1 full, 2 light. Auto drops to light on a slow machine.
-function gfxLite(){ return SET.gfx===2||(SET.gfx!==1&&LITE); }
-function perfWatch(rdt){ if(SET.gfx||LITE||game.state!=='play'||game.paused) return; perfT+=rdt; if(perfT<2) return; perfN++; perfS+=rdt; // measured after 2 s of play
-  if(perfN>=240){ if(perfS/perfN>0.026){ LITE=true; syncArt(); } perfN=0; perfS=0; } }
+let perfT=0, perfN=0, perfS=0; // SET.gfx: 0 auto, 1 ultra, 2 high, 3 light, 4 classic. Auto steps resolution, then one tier, when a frame stays over 18 ms.
+const perfShow={frame:0,back:0,play:0,upload:0,post:0,gpu:-1};
+function perfNote(k,ms){ if(!perfOn||!(ms>=0)) return; perfShow[k]=perfShow[k]<0?ms:perfShow[k]*0.8+ms*0.2; }
+function tierLabel(t){ return ['auto','ultra','high','light','classic'][t]||String(t); }
+function activeTier(){ return SET.gfx===0?autoTier:SET.gfx; }
+function gfxLite(){ return activeTier()===3; }
+function atPerfFloor(){ return autoTier>=3&&RS<=1.01; }
+function applyGfx(n){
+  SET.gfx=clamp(n|0,0,4); rsDrop=0; perfT=0; perfN=0; perfS=0;
+  if(!SET.gfx) autoTier=1;
+  if(SET.gfx!==4&&!Q.has('classic')&&!Q.has('nowebgl')){ glFailed=false; if(glState==='classic') glState='init'; }
+  saveSettings(); syncArt(); fit();
+}
+function glLabel(){ if(!glOn()) return 'classic'; return glState==='webgl2'||glState==='webgl1'?glState:'pending'; }
+function perfStepDown(){
+  const before=RS+':'+autoTier+':'+rsDrop;
+  // Resolution all the way to 1 (2 → 1.5 → 1.25 → 1) before a tier change.
+  if(RS>1+1e-3){ rsDrop++; fit(); }
+  else if(autoTier<3){ autoTier++; syncArt(); }
+  return before!==(RS+':'+autoTier+':'+rsDrop);
+}
+function perfWatch(rdt){ if(AUTO||SET.gfx||game.state!=='play'||game.paused||atPerfFloor()) return; perfT+=rdt; perfN++; perfS+=rdt; // a 2 s window of play, then one step
+  if(perfT<2) return; const mean=perfS/Math.max(1,perfN); perfT=0; perfN=0; perfS=0; if(mean>0.018) perfStepDown(); }
+function drawPerf(){
+  if(!perfOn||!hud) return;
+  const g=hx; g.save(); g.setTransform(hud.width/W,0,0,hud.height/H,0,0); g.globalAlpha=1; g.globalCompositeOperation='source-over';
+  const name=SET.gfx===0?'auto→'+tierLabel(activeTier()):tierLabel(activeTier());
+  const gpu=perfShow.gpu<0?'gpu n/a':'gpu '+perfShow.gpu.toFixed(2);
+  const lines=['v12.1  '+glLabel()+'  '+name+'  RS '+RS,'frame '+perfShow.frame.toFixed(2)+' ms   back '+perfShow.back.toFixed(2)+'   play '+perfShow.play.toFixed(2)+'   upload '+perfShow.upload.toFixed(2)+'   post '+perfShow.post.toFixed(2)+'   '+gpu];
+  g.font='11px Georgia, serif'; const w=Math.ceil(Math.max(g.measureText(lines[0]).width,g.measureText(lines[1]).width))+18;
+  g.fillStyle='rgba(8,4,2,0.78)'; g.fillRect(W/2-w/2,6,w,34); g.fillStyle='#ffe6c4'; g.textAlign='center'; g.textBaseline='middle';
+  g.fillText(lines[0],W/2,16); g.fillText(lines[1],W/2,30); g.restore();
+}
 // Bloom and the VHS bleed read only what has been drawn so far (the backdrop). The play layer is composited after.
 function postBackdrop(){
   if(gfxLite()) return;
@@ -2588,27 +2650,205 @@ function drawCine(){
   // the light, streaming out to everyone
   cx.save(); cx.globalCompositeOperation='lighter'; const r=rngf(31); for(let i=0;i<90;i++){ const sp=40+r()*120; const ang=r()*TAU; const dd=(t*sp+r()*300)%(W*0.7); const x=W/2+Math.cos(ang)*dd, y=H*0.45+Math.sin(ang)*dd*0.6; cx.fillStyle=`rgba(255,225,150,${0.5*a*(1-dd/(W*0.7))})`; cx.beginPath(); cx.arc(x,y,1.5+r()*2,0,TAU); cx.fill(); } cx.restore();
 }
-function drawWorld(){
-  base(); cx.globalAlpha=1; cx.globalCompositeOperation='source-over'; cx.fillStyle='#000'; cx.fillRect(0,0,W,H);
-  if(!A) return;
-  const d=A.d;
+/* ---- gl ---- */
+let gl=null, glCv=null, glBack=null, glComp=null, glBuf=null, bgTex=null, playTex=null, gpuExt=null, gpuQ=[], glWarm=0;
+function glAlive(){ return !!(gl&&!gl.isContextLost()); }
+function glOn(){ if(Q.has('classic')||Q.has('nowebgl')||glFailed) return false; return activeTier()!==4; }
+function glFail(){ glState='classic'; glFailed=true; gl=null; glBack=null; glComp=null; gpuExt=null; gpuQ=[]; glImgTex=null; glPara=0; }
+function glLost(){ glFail(); }
+function glMakeTex(){
+  const t=gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  return t;
+}
+function glTex(tex, src, premul){
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+  gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, !!premul);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, src);
+  return tex;
+}
+function glImage(img){
+  let t=glImgTex.get(img);
+  if(!t){ t=glMakeTex(); glTex(t, img, false); glImgTex.set(img, t); }
+  return t;
+}
+function glVS(){
+  if(glState==='webgl2') return '#version 300 es\nprecision mediump float;\nin vec2 aPos;\nout vec2 vUv;\nvoid main(){ vUv=aPos*0.5+0.5; gl_Position=vec4(aPos,0.0,1.0); }';
+  return 'precision mediump float;\nattribute vec2 aPos;\nvarying vec2 vUv;\nvoid main(){ vUv=aPos*0.5+0.5; gl_Position=vec4(aPos,0.0,1.0); }';
+}
+function glFS(body){
+  const web2=glState==='webgl2';
+  let s=body.replace(/VARY/g, web2?'in':'varying').replace(/TEXTURE/g, web2?'texture':'texture2D').replace(/FRAGCOLOR/g, web2?'o':'gl_FragColor').replace(/OUTDECL/g, web2?'out vec4 o;':'');
+  if(web2) s='#version 300 es\n'+s;
+  return s;
+}
+function glProgram(fsBody){
+  const p=gl.createProgram(), a=gl.createShader(gl.VERTEX_SHADER), b=gl.createShader(gl.FRAGMENT_SHADER);
+  gl.shaderSource(a, glVS()); gl.compileShader(a); gl.shaderSource(b, glFS(fsBody)); gl.compileShader(b);
+  if(!gl.getShaderParameter(a, gl.COMPILE_STATUS)||!gl.getShaderParameter(b, gl.COMPILE_STATUS)){ console.warn(gl.getShaderInfoLog(a)||'', gl.getShaderInfoLog(b)||''); return null; }
+  gl.attachShader(p, a); gl.attachShader(p, b); gl.bindAttribLocation(p, 0, 'aPos'); gl.linkProgram(p);
+  if(!gl.getProgramParameter(p, gl.LINK_STATUS)){ console.warn(gl.getProgramInfoLog(p)||''); return null; }
+  return p;
+}
+const GL_BACK=`precision mediump float;
+VARY vec2 vUv;
+uniform sampler2D uPaint; uniform sampler2D uDepth;
+uniform vec2 uLog; uniform float uP, uPz, uDx, uSpread, uCamY, uScale, uTaps, uAlpha, uStr;
+OUTDECL
+void main(){
+  vec2 s=vec2(vUv.x, 1.0-vUv.y)*uLog;
+  float dw=uLog.x*uScale, dh=uLog.y*uScale, slack=dw-uLog.x, parF=0.35;
+  float ox=-slack*0.5+slack*(0.5-uP)*parF*0.9+uDx*uLog.x*0.008;
+  float oy=-(dh-uLog.y)*0.6-uCamY*parF*0.35;
+  vec2 uvF=vec2((s.x-ox)/dw, (s.y-oy)/dh);
+  float extra=0.65*uStr;
+  float oxN=ox+slack*(0.5-uP)*extra*0.9+uDx*uLog.x*0.02*uStr;
+  float oyN=oy-uCamY*extra*0.35-uSpread*5.0*uStr;
+  vec2 uvN=vec2((s.x-oxN)/dw, (s.y-oyN)/dh);
+  vec2 best=uvF; float bestD=0.0;
+  for(int i=0;i<8;i++){
+    if(float(i)<uTaps){
+      float t=uTaps<=1.0?1.0:float(i)/(uTaps-1.0);
+      vec2 u=mix(uvF, uvN, t);
+      vec2 uc=clamp(u, 0.0, 1.0);
+      float d=TEXTURE(uDepth, vec2(uc.x, 1.0-uc.y)).r;
+      if(d+0.02>=t){ best=u; bestD=d; }
+    }
+  }
+  float br=uPz*mix(1.0, 2.0, bestD);
+  vec2 uv=(best-0.5)/(1.0+br)+0.5;
+  if(uv.x<0.0||uv.y<0.0||uv.x>1.0||uv.y>1.0) FRAGCOLOR=vec4(0.0);
+  else FRAGCOLOR=vec4(TEXTURE(uPaint, vec2(uv.x, 1.0-uv.y)).rgb, uAlpha);
+}`;
+const GL_COMP=`precision mediump float;
+VARY vec2 vUv;
+uniform sampler2D uBg; uniform sampler2D uPlay;
+uniform float uLight, uBloom, uGrade;
+OUTDECL
+vec3 hookLight(vec3 c, float k){ return c; }
+vec3 hookBloom(vec3 c, float k){ return c; }
+vec3 hookGrade(vec3 c, float k){ return c; }
+void main(){
+  vec4 bg=TEXTURE(uBg, vUv); vec4 pl=TEXTURE(uPlay, vUv);
+  vec3 bgc=hookGrade(hookBloom(hookLight(bg.rgb, uLight), uBloom), uGrade);
+  FRAGCOLOR=vec4(bgc*(1.0-pl.a)+pl.rgb, 1.0);
+}`;
+function glBuild(){
+  glBack=glProgram(GL_BACK); glComp=glProgram(GL_COMP); if(!glBack||!glComp) return false;
+  const take=(p,list)=>{ const u={}; for(const n of list) u[n]=gl.getUniformLocation(p, n); p.u=u; };
+  take(glBack, ['uPaint','uDepth','uLog','uP','uPz','uDx','uSpread','uCamY','uScale','uTaps','uAlpha','uStr']);
+  take(glComp, ['uBg','uPlay','uLight','uBloom','uGrade']);
+  glBuf=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, glBuf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+  bgTex=glMakeTex(); playTex=glMakeTex();
+  gl.disable(gl.DEPTH_TEST); gl.disable(gl.CULL_FACE);
+  return true;
+}
+function glInit(){
+  glFailed=false;
+  try{
+    glCv=document.createElement('canvas'); glCv.width=Math.max(1,cv.width); glCv.height=Math.max(1,cv.height);
+    const opts={alpha:false, antialias:false, depth:false, stencil:false, premultipliedAlpha:false, preserveDrawingBuffer:true, powerPreference:'high-performance'};
+    gl=glCv.getContext('webgl2', opts);
+    if(gl) glState='webgl2';
+    else { gl=glCv.getContext('webgl', opts)||glCv.getContext('experimental-webgl', opts); if(gl) glState='webgl1'; }
+    if(!gl){ glFail(); return false; }
+    const mine=glCv;
+    glCv.addEventListener('webglcontextlost', ev=>{ ev.preventDefault(); if(ev.target===mine&&glCv===mine) glLost(); });
+    glImgTex=new Map(); glWarm=0; gpuQ=[];
+    if(!glBuild()){ glFail(); return false; }
+    gpuExt=null; if(glState==='webgl2'){ try{ gpuExt=gl.getExtension('EXT_disjoint_timer_query_webgl2'); }catch(_){ gpuExt=null; } }
+    return true;
+  }catch(e){ glFail(); return false; }
+}
+function glResize(){
+  const w=cv.width, h=cv.height;
+  if(playCv.width!==w||playCv.height!==h){ playCv.width=w; playCv.height=h; }
+  if(glCv&&(glCv.width!==w||glCv.height!==h)){ glCv.width=w; glCv.height=h; }
+  if(glAlive()) gl.viewport(0,0,glCv.width,glCv.height);
+}
+function glUse(prog){ gl.useProgram(prog); gl.bindBuffer(gl.ARRAY_BUFFER, glBuf); gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0); }
+function glCheck(){ if(glWarm>8) return; glWarm++; const e=gl.getError(); if(e) throw new Error('gl '+e); }
+function gpuStart(){
+  if(!gpuExt) return null;
+  try{ if(gl.getParameter(gpuExt.GPU_DISJOINT_EXT)) return null; const q=gl.createQuery(); gl.beginQuery(gpuExt.TIME_ELAPSED_EXT, q); return q; }
+  catch(_){ gpuExt=null; return null; }
+}
+function gpuStop(q){ if(!q||!gpuExt) return; try{ gl.endQuery(gpuExt.TIME_ELAPSED_EXT); gpuQ.push(q); }catch(_){ gpuExt=null; } }
+function gpuPoll(){
+  if(!gpuExt||!gpuQ.length) return;
+  try{
+    if(gl.getParameter(gpuExt.GPU_DISJOINT_EXT)){ gpuQ.length=0; return; }
+    const keep=[];
+    for(const q of gpuQ){
+      if(!gl.getQueryParameter(q, gl.QUERY_RESULT_AVAILABLE)){ keep.push(q); continue; }
+      const ns=gl.getQueryParameter(q, gl.QUERY_RESULT); gl.deleteQuery(q);
+      if(ns>0) perfShow.gpu=perfShow.gpu<0?ns/1e6:perfShow.gpu*0.8+(ns/1e6)*0.2;
+    }
+    gpuQ=keep;
+  }catch(_){ gpuExt=null; gpuQ=[]; }
+}
+function glCanParallax(s){
+  if(!s||activeTier()>2||SET.depth===0||Q.has('flat')) return false;
+  for(const [i] of s.draws){ const n=s.imgs[i][0], im=baseImg(n), dp=DEPTH[n]; if(!PACK[n]||!im||!dp||!dp.complete||!dp.naturalWidth) return false; }
+  return true;
+}
+function glBackdrop(s){
+  gl.viewport(0,0,glCv.width,glCv.height); gl.disable(gl.BLEND); gl.clearColor(0,0,0,1); gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); glUse(glBack);
+  const L=glBack.u;
+  gl.uniform2f(L.uLog, W, H); gl.uniform1f(L.uScale, 1.16); gl.uniform1f(L.uPz, s.pz); gl.uniform1f(L.uDx, s.dx);
+  gl.uniform1f(L.uSpread, s.spread); gl.uniform1f(L.uCamY, camY); gl.uniform1f(L.uTaps, activeTier()===1?8:4); gl.uniform1f(L.uStr, 0.75);
+  const q=gpuStart();
+  for(const [i,alpha] of s.draws){
+    const [n,at]=s.imgs[i]; const end=s.imgs[i+1]?s.imgs[i+1][1]:s.d.len; const p=clamp((s.cam-at+390)/(end-at+390),0,1);
+    gl.uniform1f(L.uP, p); gl.uniform1f(L.uAlpha, alpha);
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, glImage(baseImg(n))); gl.uniform1i(L.uPaint, 0);
+    gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, glImage(DEPTH[n])); gl.uniform1i(L.uDepth, 1);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  }
+  gpuStop(q); gl.disable(gl.BLEND);
+}
+function glLights(){ return 0; } // G3: painted normals. Zero leaves the canvas veil in charge.
+function glBloom(){ return 0; } // G3: shader bloom on the backdrop only. Zero keeps postBackdrop.
+function glGrade(){ return 0; } // G3: per-land grade. Zero is identity.
+function glPost(){ const L=glComp.u; gl.uniform1f(L.uLight, glLights()); gl.uniform1f(L.uBloom, glBloom()); gl.uniform1f(L.uGrade, glGrade()); }
+function glPlay(){
+  gl.viewport(0,0,glCv.width,glCv.height); gl.disable(gl.BLEND); glUse(glComp);
+  gl.activeTexture(gl.TEXTURE0); glTex(bgTex, cv, false); gl.uniform1i(glComp.u.uBg, 0);
+  gl.activeTexture(gl.TEXTURE1); glTex(playTex, playCv, true); gl.uniform1i(glComp.u.uPlay, 1);
+  const q=gpuStart(); glPost(); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); gpuStop(q); gpuPoll();
+}
+function blitGL(){ cx.setTransform(1,0,0,1,0,0); cx.imageSmoothingEnabled=false; cx.drawImage(glCv,0,0); cx.imageSmoothingEnabled=true; base(); }
+function drawBack(){
   drawBackdrop();
-  silLayer(d.fg,0.55,false);
+  silLayer(A.d.fg,0.55,false);
   if(!gfxLite()) drawAir();
   postBackdrop();
-  const sh=shakeOffset(), shx=sh[0], shy=sh[1];
+}
+function drawPlayGeom(){
+  const sh=shakeOffset(), shx=sh[0], shy=sh[1], d=A.d;
   cx.save(); cx.translate(-camX+shx,-camY+shy);
   drawWall(); drawGround(); drawKneelMark(); drawCold(); drawThrone(); drawVeil(); drawShrine(); drawLanterns(); drawHang(); drawWays(); drawSolids(); drawHazards(); drawCats(); drawBells(); drawNPCs(); drawFolk(); drawMotes(); drawSecrets(); drawNightSecrets(); drawBossHazards(); drawShadows(); drawBoss(); drawEnemies();
   if(d.bench){ const bx=d.bench.x-14, gy=d.gy(bx); cx.fillStyle='#1c0c0a'; cx.fillRect(bx-4,gy-16,40,5); cx.fillRect(bx,gy-16,3,16); cx.fillRect(bx+30,gy-16,3,16); cx.fillRect(bx-4,gy-34,3,22); }
   drawPlayer(); drawCarried(); drawShots(); drawParticles();
   cx.restore();
+}
+function drawPlayFront(){
+  const d=A.d;
   drawLighting(); drawGlow();
+  const sh=shakeOffset(), shx=sh[0], shy=sh[1];
   if(A.eyes.length){ cx.save(); cx.translate(-camX+shx,-camY+shy); drawEyes(); cx.restore(); }
   silLayer(d.fg,1.25,true);
   if(game.areaI===7){ // dusk garden: everyone's lights
     cx.save(); cx.globalCompositeOperation='lighter'; const n=50+Math.min(120,(game.stats.given||0)*5); const r=rngf(77);
     for(let i=0;i<n;i++){ const par=0.2+r()*0.6; const base=r()*W*3; const xx=((base-camX*par)%(W*1.2)+W*1.2)%(W*1.2)-W*0.1; const y=H*0.2+r()*H*0.62+Math.sin(game.t*(0.5+r())+i)*8; const a=0.3+0.3*Math.sin(game.t*(1+r()*2)+i); cx.fillStyle=`rgba(255,${200+r()*40|0},120,${a})`; cx.beginPath(); cx.arc(xx,y,1.2+r()*1.8,0,TAU); cx.fill(); }
     cx.restore(); }
+}
+function drawPlay(){ drawPlayGeom(); drawPlayFront(); }
+function drawOver(){
   if(game.throne&&game.throne.phase==='release'){ const t=game.throne.t; cx.fillStyle=`rgba(255,248,230,${clamp((t-1.8)/1.4,0,1)})`; cx.fillRect(0,0,W,H); }
   if(game.ending&&game.ending.sec!==undefined){ const t=game.ending.t-game.ending.sec; const a=clamp(t/2.5,0,1); const z=1.04+0.04*clamp(t/14,0,1); cx.save(); cx.globalAlpha=a; cx.drawImage(IMG.x4,W/2-W*z/2,H/2-H*z/2,W*z,H*z); cx.restore();
     cx.save(); cx.globalCompositeOperation='lighter'; for(let i=0;i<3;i++){ const x=W*(0.3+i*0.2), y=H*0.3+Math.sin(game.t+i)*6; const g=cx.createRadialGradient(x,y,0,x,y,26); g.addColorStop(0,`rgba(255,240,200,${0.8*a})`); g.addColorStop(1,'rgba(255,170,60,0)'); cx.fillStyle=g; cx.fillRect(x-26,y-26,52,52); } cx.restore(); }
@@ -2616,6 +2856,44 @@ function drawWorld(){
   drawCine();
   if(game.flash>0){ cx.fillStyle=`rgba(120,20,10,${game.flash*0.5})`; cx.fillRect(0,0,W,H); }
   postFrame();
+}
+function drawWorldClassic(){
+  const t0=performance.now(); glPara=0;
+  base(); cx.globalAlpha=1; cx.globalCompositeOperation='source-over'; cx.fillStyle='#000'; cx.fillRect(0,0,W,H);
+  if(!A){ perfNote('play', performance.now()-t0); return; }
+  drawBack(); drawPlay(); drawOver();
+  perfNote('play', performance.now()-t0);
+}
+function drawWorldGL(){
+  const t0=performance.now();
+  glResize(); if(!glAlive()) throw new Error('lost');
+  const keep=pen; cx=playCx; pen=playCx;
+  try{
+    playCx.setTransform(RS,0,0,RS,0,0); playCx.globalAlpha=1; playCx.globalCompositeOperation='source-over'; playCx.clearRect(0,0,W,H);
+    drawPlayGeom();
+    cx=gameCx; pen=keep;
+    const t1=performance.now();
+    base(); cx.globalAlpha=1; cx.globalCompositeOperation='source-over'; cx.fillStyle='#000'; cx.fillRect(0,0,W,H);
+    const st=backdropState(); const para=glCanParallax(st); glPara=para?1:0;
+    if(para){ glBackdrop(st); blitGL(); paintWash(st.pe); silLayer(A.d.fg,0.55,false); if(!gfxLite()) drawAir(); postBackdrop(); }
+    else drawBack();
+    const t2=performance.now();
+    glPlay(); blitGL(); glCheck();
+    const t3=performance.now();
+    drawPlayFront(); drawOver();
+    const t4=performance.now();
+    perfNote('play', t1-t0); perfNote('back', t2-t1); perfNote('upload', t3-t2); perfNote('post', t4-t3);
+  }catch(err){ cx=gameCx; pen=keep; throw err; }
+}
+function drawWorld(){
+  if(A&&glOn()){
+    try{
+      if(glState==='init'||!glAlive()){ if(!glInit()) throw new Error('no gl'); }
+      drawWorldGL();
+      return;
+    }catch(err){ cx=gameCx; glFail(); }
+  }
+  drawWorldClassic();
 }
 function drawTitle(){
   base(); cx.fillStyle='#000'; cx.fillRect(0,0,W,H);
@@ -2641,7 +2919,7 @@ function drawTitle(){
     if(n&&n.runs) q.push(`long nights ${n.runs}`+(n.far?`     furthest  ${farLabel(n)}`:''));
     const e=r.ember; if(e&&e.runs) q.push(`ember runs ${e.runs}`+(e.far?`     furthest  ${farLabel(e)}`:'')); // v11
     if(q.length) text(q.join('          '),W/2,H*0.72+52,11,'rgba(255,222,190,0.62)','center',a); }
-  text('v12.0',W-10,H-13,9,'rgba(255,220,190,0.35)','right',a);
+  text('v12.1',W-10,H-13,9,'rgba(255,220,190,0.35)','right',a);
   if(dmAny()) text(touchMode?'tap here: where the light has gone out':'M  where the light has gone out',W-14,18,11,'rgba(255,222,190,0.6)','right',a);
   text(touchMode?'◀ ▶ walk    ⤒ jump    ⌄ crouch    ✦ shine':'← →  walk     ↑ jump     ↓ crouch     X  shine     Esc menu',W/2,H-32,13,'rgba(255,230,200,0.8)','center',a);
   text('a journey through the art of The Road to Fantor',W/2,H-13,10,'rgba(255,220,190,0.5)','center',a);
@@ -2676,7 +2954,7 @@ function cardCanvas(){ const C=document.createElement('canvas'); C.width=1200; C
   for(let i=0;i<cols;i++){ const x=100+cw*(i+0.5); T(i<7?AREAS[i].num:'Dusk',x,y0+36,20,'#ffd59a'); T(String(n[i]),x,y0+68,26,'#fff6e6'); }
   T(`this run: light gathered ${s.motes|0}, shadows calmed ${s.calmed|0}, old powers calmed ${s.bosses|0}`,600,y0+116,17,'#ffe6cc');
   T('AI-generated art, created and curated by Eh AyeC',600,610,15,'rgba(255,225,195,0.85)');
-  T('https://ehayec.itch.io/fantor-the-wanderers-light',600,638,16,'#ffcf9a'); T('v12.0',1185,660,11,'rgba(255,220,190,0.5)','right');
+  T('https://ehayec.itch.io/fantor-the-wanderers-light',600,638,16,'#ffcf9a'); T('v12.1',1185,660,11,'rgba(255,220,190,0.5)','right');
   return C; }
 function saveCard(){ if(!(game.state==='end'||game.state==='gameover')) return; let url; try{ url=cardCanvas().toDataURL('image/png'); }catch(_){ return; }
   const again=game.cardT&&game.t-game.cardT<8; game.cardT=game.t; game.cardN=(game.cardN|0)+1; let u=url;
@@ -2713,7 +2991,7 @@ function drawEnd(){
     ...(game.newBest?[['Best','a new best']]:game.oldBest?[['Best',fmtT(game.oldBest,1)]]:[])];
   rows.forEach(([k,v],i)=>{ const aa=clamp((t-2-i*0.4)/1,0,1)*cardA; text(k,W/2-12,H*0.38+i*25,16,'#ffdcae','right',aa); text(String(v),W/2+12,H*0.38+i*25,16,'#fff6e6','left',aa); });
   if(game.nightNew) text('The Long Night has begun. It waits on the title.',W/2,H-56,15,'#c8d4ff','center',clamp((t-6)/1.5,0,1)*cardA);
-  text("FANTOR: The Wanderer's Light  v12.0",W/2,H-10,9,'rgba(255,220,190,0.45)','center',a);
+  text("FANTOR: The Wanderer's Light  v12.1",W/2,H-10,9,'rgba(255,220,190,0.45)','center',a);
   if(t>4) text(touchMode?'Tap to return':'Press Enter to return',W/2,H-30,14,'#ffe8cc','center',0.5+0.4*Math.sin(t*2));
   drawCardBtn(t); // v11
 }
@@ -2776,7 +3054,7 @@ function drawGameOverUi(t){
   text(game.night?'No continues. The long night begins again at the shore.':'No continues. The journey begins again at the shore.',W/2,H-56,14,'#ffd9b8','center',clamp((t-2.5)/1,0,1)*0.85);
   if(t>1.0) text(touchMode?'Tap to begin again':'Press Enter to begin again',W/2,H-30,16,'#fff0dc','center',0.5+0.4*Math.sin(t*2.5));
   drawCardBtn(t); // v11
-  text("FANTOR: The Wanderer's Light  v12.0",W/2,H-10,9,'rgba(255,220,190,0.4)','center',a); // v10
+  text("FANTOR: The Wanderer's Light  v12.1",W/2,H-10,9,'rgba(255,220,190,0.4)','center',a); // v10
 }
 function drawLoading(){
   base(); cx.fillStyle='#050302'; cx.fillRect(0,0,W,H); pen=hx;
@@ -2804,6 +3082,7 @@ function render(){
     else { drawWorld(); pen=hx; if(A) drawHUD();
       if(game.state==='trans'){ const t=game.transT; const a=t<1.2?clamp(t/1.0,0,1):clamp(1-(t-1.2)/0.8,0,1); hx.fillStyle=`rgba(0,0,0,${a})`; hx.fillRect(0,0,W,H); }
       if(game.fade>0&&game.state==='play'){ hx.fillStyle=`rgba(0,0,0,${game.fade})`; hx.fillRect(0,0,W,H); } }
+    if(perfOn) drawPerf();
     pen=cx;
   } finally { pop(); }
 }
@@ -2812,7 +3091,7 @@ function render(){
 let last=performance.now(), acc=0, manual=false; const STEP=1/60;
 game.timeScale=1;
 function stepFrame(now){
-  let dt=(now-last)/1000; last=now; if(dt>0.25) dt=0.25; perfWatch(dt); if(game.slowT>0){ game.slowT-=dt; dt*=0.35; } acc+=dt*game.timeScale;
+  let dt=(now-last)/1000; last=now; const rawDt=dt; if(dt>0.25) dt=0.25; perfNote('frame', rawDt*1000); perfWatch(dt); if(game.slowT>0){ game.slowT-=dt; dt*=0.35; } acc+=dt*game.timeScale;
   let n=0; while(acc>=STEP&&n<40){ prevCamX=camX; prevCamY=camY; prevPX=P.x; prevPY=P.y; update(STEP); acc-=STEP; n++; for(const k in pressed) delete pressed[k]; tap=null; }
   renderA=clamp(acc/STEP,0,1);
   syncTouch();
@@ -2879,6 +3158,6 @@ window.fantorTest={ deathPhrase, deathListLine, clusterMarks, backdropPlan, card
   subNow:()=>{ const lift=!!vo.lift, legend=!!vo.legend; const ls=vo.sub?wrap(vo.sub,lift?W*0.58:W*0.78,17):[]; return {lift,legend,lines:ls.length,box:subBox(Math.max(1,ls.length),lift,legend)}; },
   titleFade,
   folk:()=>A?A.folk.map(f=>({name:f.name,x:f.x,said:!!f.said,reach:f.reach||120})):[] };
-window.fantorDebug={ boxes:playBoxes, drawn:()=>[drawnX,drawnY], art:()=>Object.keys(IMG).filter(k=>k.indexOf('@1920')>0||/_L\d$/.test(k)), manual(v){ manual=!!v; if(!manual){ last=performance.now(); requestAnimationFrame(frame); } }, frame:stepFrame, cam:()=>[camX,camY], line:(id)=>{ if(!id){ vo.sub=''; vo.subA=0; vo.lift=false; vo.legend=false; vo.queue.length=0; if(vo.cur){ try{ vo.cur.src&&vo.cur.src.stop(); }catch(_){} vo.cur=null; } return; } vo.queue.length=0; if(vo.cur){ try{ vo.cur.src&&vo.cur.src.stop(); }catch(_){} vo.cur=null; } vo.sub=LINES[id]||String(id); vo.subA=1; vo.lift=subLift(); vo.legend=!!(game.legendT>0); }, kill:()=>{ if(game.state==='play'&&!P.dead){ const g=GOD; GOD=false; loseLife('debug'); GOD=g; } }, setLives:(n)=>{ game.lives=n; }, god:(v)=>{ GOD=!!v; }, boss:()=>A&&A.boss&&{st:A.boss.st,hp:A.boss.hp,calm:A.boss.calm,x:Math.round(A.boss.x),phase:A.boss.phase,atk:A.boss.atk}, bossHp:(n)=>{ const B=A.boss; B.hp=n; while(B.phase<B.nph&&B.hp<=B.th[B.phase-1]) bossPhase(); }, deaths:()=>game.deaths, tp:(x,light)=>{ P.x=x; P.y=A.d.gy(x); P.vy=0; camX=clamp(x-W*0.36,0,A.d.len-W); for(const t of A.trig) if(t.x<x) { t.done=true; } for(const fo of A.folk) if(fo.x<x) fo.said=true; vo.queue.length=0; if(vo.cur){ try{ vo.cur.src&&vo.cur.src.stop(); }catch(_){} vo.cur.end=0; } if(light!==undefined) P.light=light; holdView(); }, goArea, setLight:(n)=>{P.light=n;}, enterSecret, relics:()=>[...game.relics], giveRelics:(n)=>{ for(let i=0;i<n;i++) game.relics.add(i); }, areas:AREAS, nareas:NIGHT, act:()=>A&&A.act, night:()=>game.night, splits:()=>game.splits, store, moves:(n)=>{ if(n!==undefined) game.moves=n; return game.moves; }, P:()=>P, A:()=>A, state:()=>({act:A&&A.act,night:game.night,moves:game.moves,ember:!!P.ember,secret:A&&A.d.secret||0,relics:game.relics.size,audio:ac?ac.state:null,menu:menuOpen,veil:!!game.veil,paused:!!game.paused,rs:RS,cw:cv.width,ch:cv.height,state:game.state,area:game.areaI,x:Math.round(P.x),y:Math.round(P.y),light:P.light,lives:game.lives,dead:P.dead,stats:game.stats,throne:game.throne&&game.throne.phase,vo:vo.cur&&vo.cur.id,boss:A&&A.boss?{st:A.boss.st,hp:A.boss.hp,calm:A.boss.calm,phase:A.boss.phase}:null,shrine:A&&A.shrine?{need:A.shrine.need,awake:A.shrine.awake}:null}) };/*@/DEV*/
+window.fantorDebug={ boxes:playBoxes, gfx:()=>({gfx:SET.gfx,tier:activeTier(),auto:autoTier,rs:RS,drop:rsDrop,gl:glLabel(),lite:gfxLite()?1:0,para:glPara,depth:Object.keys(DEPTH),perf:perfShow}), setGfx(n){ applyGfx(n); }, glLose(){ if(glCv){ try{ const ev=new Event('webglcontextlost'); glCv.dispatchEvent(ev); }catch(_){} } glLost(); }, perfStep(){ return perfStepDown(); }, drawn:()=>[drawnX,drawnY], art:()=>Object.keys(IMG).filter(k=>k.indexOf('@1920')>0||/_L\d$/.test(k)), manual(v){ manual=!!v; if(!manual){ last=performance.now(); requestAnimationFrame(frame); } }, frame:stepFrame, cam:()=>[camX,camY], line:(id)=>{ if(!id){ vo.sub=''; vo.subA=0; vo.lift=false; vo.legend=false; vo.queue.length=0; if(vo.cur){ try{ vo.cur.src&&vo.cur.src.stop(); }catch(_){} vo.cur=null; } return; } vo.queue.length=0; if(vo.cur){ try{ vo.cur.src&&vo.cur.src.stop(); }catch(_){} vo.cur=null; } vo.sub=LINES[id]||String(id); vo.subA=1; vo.lift=subLift(); vo.legend=!!(game.legendT>0); }, kill:()=>{ if(game.state==='play'&&!P.dead){ const g=GOD; GOD=false; loseLife('debug'); GOD=g; } }, setLives:(n)=>{ game.lives=n; }, god:(v)=>{ GOD=!!v; }, boss:()=>A&&A.boss&&{st:A.boss.st,hp:A.boss.hp,calm:A.boss.calm,x:Math.round(A.boss.x),phase:A.boss.phase,atk:A.boss.atk}, bossHp:(n)=>{ const B=A.boss; B.hp=n; while(B.phase<B.nph&&B.hp<=B.th[B.phase-1]) bossPhase(); }, deaths:()=>game.deaths, tp:(x,light)=>{ P.x=x; P.y=A.d.gy(x); P.vy=0; camX=clamp(x-W*0.36,0,A.d.len-W); for(const t of A.trig) if(t.x<x) { t.done=true; } for(const fo of A.folk) if(fo.x<x) fo.said=true; vo.queue.length=0; if(vo.cur){ try{ vo.cur.src&&vo.cur.src.stop(); }catch(_){} vo.cur.end=0; } if(light!==undefined) P.light=light; holdView(); }, goArea, setLight:(n)=>{P.light=n;}, enterSecret, relics:()=>[...game.relics], giveRelics:(n)=>{ for(let i=0;i<n;i++) game.relics.add(i); }, areas:AREAS, nareas:NIGHT, act:()=>A&&A.act, night:()=>game.night, splits:()=>game.splits, store, moves:(n)=>{ if(n!==undefined) game.moves=n; return game.moves; }, P:()=>P, A:()=>A, state:()=>({act:A&&A.act,night:game.night,moves:game.moves,ember:!!P.ember,secret:A&&A.d.secret||0,relics:game.relics.size,audio:ac?ac.state:null,menu:menuOpen,veil:!!game.veil,paused:!!game.paused,rs:RS,cw:cv.width,ch:cv.height,state:game.state,area:game.areaI,x:Math.round(P.x),y:Math.round(P.y),light:P.light,lives:game.lives,dead:P.dead,stats:game.stats,throne:game.throne&&game.throne.phase,vo:vo.cur&&vo.cur.id,boss:A&&A.boss?{st:A.boss.st,hp:A.boss.hp,calm:A.boss.calm,phase:A.boss.phase}:null,shrine:A&&A.shrine?{need:A.shrine.need,awake:A.shrine.awake}:null}) };/*@/DEV*/
 requestAnimationFrame(frame);
 })();
