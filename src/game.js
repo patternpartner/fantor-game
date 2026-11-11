@@ -1,4 +1,4 @@
-/* FANTOR · The Wanderer's Light  (v11.4)
+/* FANTOR · The Wanderer's Light  (v12.0)
    A small side-scrolling journey through the AI-generated art of "The Road to Fantor",
    with characters cut from Eh AyeC's Fantor collections on Fine Art America.
    Plain canvas + WebAudio, no dependencies.
@@ -7,6 +7,8 @@
 (function(){
 const W=854, H=480;                       // VHS-ish 480 lines
 const cv=document.getElementById('game'), cx=cv.getContext('2d');
+const hud=document.getElementById('hud'), hx=hud.getContext('2d');
+let pen=cx; // text and the HUD overlay. The world keeps drawing on cx.
 const Q=new URLSearchParams(location.search);
 /*@DEV*/const AUTO=Q.has('auto'), DEBUG=Q.has('debug'), START_AREA=+(Q.get('area')||0), MUTE=Q.has('mute');
 let GOD=Q.has('god');            // debug invincibility (used by the autopilot tests)
@@ -19,13 +21,18 @@ const clamp=(v,a,b)=>v<a?a:v>b?b:v, lerp=(a,b,t)=>a+(b-a)*t, sm=t=>t*t*(3-2*t);
 function rngf(seed){let s=seed>>>0||1;return()=>{s^=s<<13;s>>>=0;s^=s>>17;s^=s<<5;s>>>=0;return s/4294967296;};}
 
 /* ---------------- layout / resize ---------------- */
-let RS=1; // backing-store scale: the paintings are 1280x720, so draw sharper when the canvas is shown big
+let RS=1, artOn=false, vigRS=-1; // backing-store scale. 1920 paintings are used when this is 1.5 or 2.
 function fit(){const vw=Math.max(1,innerWidth), vh=Math.max(1,innerHeight), s=Math.min(vw/W,vh/H);
-  cv.style.width=Math.floor(W*s)+'px'; cv.style.height=Math.floor(H*s)+'px';
+  const cssW=Math.floor(W*s), cssH=Math.floor(H*s);
+  cv.style.width=cssW+'px'; cv.style.height=cssH+'px';
+  if(hud){ hud.style.width=cssW+'px'; hud.style.height=cssH+'px';
+    const dpr=window.devicePixelRatio||1, hw=Math.max(1,Math.round(cssW*dpr)), hh=Math.max(1,Math.round(cssH*dpr));
+    if(hud.width!==hw||hud.height!==hh){ hud.width=hw; hud.height=hh; } }
   const want=s*(window.devicePixelRatio||1); const rs=Q.has('lowres')?1:want>1.75?2:want>1.2?1.5:1;
-  if(rs!==RS||cv.width!==Math.round(W*rs)){ RS=rs; cv.width=Math.round(W*RS); cv.height=Math.round(H*RS); }}
+  if(rs!==RS||cv.width!==Math.round(W*rs)){ RS=rs; cv.width=Math.round(W*RS); cv.height=Math.round(H*RS); vigRS=-1; if(artOn) syncArt(); }}
 addEventListener('resize',()=>{ fit(); noteLayout(); }); fit();
 function base(){ cx.setTransform(RS,0,0,RS,0,0); }
+function hudPrepare(){ if(!hud) return; hx.setTransform(hud.width/W,0,0,hud.height/H,0,0); hx.globalAlpha=1; hx.globalCompositeOperation='source-over'; hx.clearRect(0,0,W,H); }
 
 /* ---------------- text ---------------- */
 const LINES={
@@ -115,8 +122,9 @@ const LINES={
 };
 
 /* ---------------- settings ---------------- */
-const SET={music:0.8,voice:1,sfx:0.8,timer:0,gfx:0};
-try{ const j=JSON.parse(localStorage.getItem('fantor.settings')||'null'); if(j) for(const k in SET) if(typeof j[k]==='number'&&j[k]>=0&&j[k]<=(k==='gfx'?2:1)) SET[k]=k==='gfx'?j[k]|0:j[k]; }catch(_){}
+const SET={music:0.8,voice:1,sfx:0.8,timer:0,gfx:0,depth:1}; // depth 1: painting layers. 0: the old flat bands.
+try{ const j=JSON.parse(localStorage.getItem('fantor.settings')||'null'); if(j) for(const k in SET) if(typeof j[k]==='number'&&j[k]>=0&&j[k]<=(k==='gfx'?2:k==='depth'?1:1)) SET[k]=k==='gfx'||k==='depth'?j[k]|0:j[k]; }catch(_){}
+if(Q.has('flat')) SET.depth=0;
 function saveSettings(){ try{ localStorage.setItem('fantor.settings',JSON.stringify(SET)); }catch(_){} }
 function applyVolumes(){ if(!ac) return; voG.gain.value=1.0*SET.voice; sfxG.gain.value=0.5*SET.sfx; }
 
@@ -292,20 +300,52 @@ const sfx={
 /* ---------------- images ---------------- */
 const IMG={};
 function loadImg(n){ return new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>{IMG[n]=i;res();}; i.onerror=()=>rej(new Error(n)); i.src='assets/img/'+n+'.webp'; }); }
-// parallax bands cut from each painting: the lower parts move faster than the sky
+// Depth-cut layers (g1_manifest.json). One scale, a different par per layer, drawn with the WebP alpha.
+// x1–x8 and anything not in the pack keep the band path below. Light and ?lowres keep the 1280 files.
+const PACK={}; let manifestReady=false;
+function wantLayers(){ return artOn&&manifestReady&&SET.depth!==0&&!Q.has('flat')&&!gfxLite()&&!Q.has('lowres'); }
+function wantHi(){ return artOn&&!gfxLite()&&!Q.has('lowres')&&RS>=1.5; }
+function baseImg(n){ return (wantHi()&&IMG[n+'@1920'])||IMG[n]; }
+function layersReady(n){ const e=PACK[n]; return !!(e&&e.layers.every(L=>IMG[n+'_'+L.id])); }
+// parallax bands cut from each painting: the lower parts move faster than the sky. Fallback for Light, flat, and x1–x8.
 const bandCache={};
 function bands(n){
-  if(bandCache[n]) return bandCache[n];
-  const im=IMG[n]; const bw=960, bh=540, out=[];
+  const src=baseImg(n); if(!src){ if(!bandCache._blank){ const a=document.createElement('canvas'), b=document.createElement('canvas'); a.width=a.height=b.width=b.height=1; bandCache._blank=[a,b]; } return bandCache._blank; }
+  const hi=!!(wantHi()&&IMG[n+'@1920']&&src===IMG[n+'@1920']);
+  const key=hi?n+'@1920':n;
+  if(bandCache[key]) return bandCache[key];
+  const bw=960, bh=540, out=[];
   for(const [top,feather] of [[0.40,0.16],[0.64,0.12]]){
     const c=document.createElement('canvas'); c.width=bw; c.height=bh; const g=c.getContext('2d');
-    g.drawImage(im,0,0,bw,bh); g.globalCompositeOperation='destination-in';
+    g.drawImage(src,0,0,bw,bh); g.globalCompositeOperation='destination-in';
     const gr=g.createLinearGradient(0,0,0,bh); gr.addColorStop(0,'rgba(0,0,0,0)'); gr.addColorStop(Math.max(0,top-feather),'rgba(0,0,0,0)'); gr.addColorStop(top,'rgba(0,0,0,1)'); gr.addColorStop(1,'rgba(0,0,0,1)');
     g.fillStyle=gr; g.fillRect(0,0,bw,bh); out.push(c);
   }
-  bandCache[n]=out; return out;
+  bandCache[key]=out; return out;
 }
-function dropBands(keep){ for(const k in bandCache) if(!keep.includes(k)) delete bandCache[k]; }
+function dropBands(keep){ for(const k in bandCache){ const base=k.replace('@1920',''); if(!keep.includes(base)) delete bandCache[k]; } }
+function artFiles(names){ const files=[]; for(const n of names){ if(PACK[n]&&wantLayers()) for(const L of PACK[n].layers) files.push(n+'_'+L.id); if(PACK[n]&&wantHi()) files.push(n+'@1920'); } return files; }
+function dropArt(keep){ const s=new Set(keep); for(const k in IMG) if((k.indexOf('@1920')>0||/_L\d$/.test(k))&&!s.has(k)) delete IMG[k]; }
+const artLoads={};
+function ensureArt(names){
+  if(!artOn) return;
+  const uniq=[]; for(const n of names) if(n&&uniq.indexOf(n)<0) uniq.push(n);
+  dropBands(uniq); const files=artFiles(uniq); dropArt(files);
+  for(const f of files) if(!IMG[f]&&!artLoads[f]) artLoads[f]=loadImg(f).then(()=>{ delete artLoads[f]; },()=>{ delete artLoads[f]; });
+  for(const n of uniq) if(IMG[n]&&!(wantLayers()&&PACK[n])) bands(n);
+}
+function artKeep(){
+  const names=[];
+  if(game.state==='title'||game.state==='loading') names.push('s01');
+  if(game.state==='end') names.push('s23');
+  if(game.state==='gameover') names.push('s15');
+  if(game.ending) names.push('x4');
+  if(game.cine&&game.cine.imgs) for(const n of game.cine.imgs) names.push(n);
+  if(A&&A.d) for(const im of A.d.imgs) names.push(im[0]);
+  if(game.state==='trans'&&!game.transFn&&game.nextArea!=null){ const d=LAND(game.nextArea); if(d) for(const im of d.imgs) names.push(im[0]); }
+  return names;
+}
+function syncArt(){ if(artOn) ensureArt(artKeep()); }
 // characters cut from the artist's own Fantor images (AI-generated, created and curated by the artist) (see CHARACTERS.md)
 const SPR={};
 const CHR=['gorit','goils','honey','keepaway','illinor','renoy','harms','xon','chroner','smonster','yogi','armour','doig','neco','vere','kingbell','gruff','whiskers','key1','key2','key3','key4','mother'];
@@ -371,12 +411,13 @@ function toggleMenu(force){
   const open=force===undefined?!menuOpen:force; if(open===menuOpen) return; menuOpen=open;
   $('menu').classList.toggle('on',open); game.paused=open; for(const k in keys) keys[k]=false;
   if(ac){ try{ if(open) ac.suspend(); else ac.resume(); }catch(_){} }
-  if(open){ $('m_timer').checked=!!SET.timer; $('m_gfx').value=String(SET.gfx|0); $('m_music').value=Math.round(SET.music*100); $('m_voice').value=Math.round(SET.voice*100); $('m_sfx').value=Math.round(SET.sfx*100); setTimeout(()=>{ try{ $('m_resume').focus({preventScroll:true}); }catch(_){} },0); }
+  if(open){ $('m_timer').checked=!!SET.timer; $('m_gfx').value=String(SET.gfx|0); if($('m_depth')) $('m_depth').value=String(SET.depth?1:0); $('m_music').value=Math.round(SET.music*100); $('m_voice').value=Math.round(SET.voice*100); $('m_sfx').value=Math.round(SET.sfx*100); setTimeout(()=>{ try{ $('m_resume').focus({preventScroll:true}); }catch(_){} },0); }
   else { audioInit(); try{ cv.focus({preventScroll:true}); }catch(_){} }
 }
 for(const k of ['music','voice','sfx']){ const el=$('m_'+k); el.addEventListener('input',()=>{ SET[k]=clamp(+el.value/100,0,1); applyVolumes(); saveSettings(); }); }
 $('m_resume').addEventListener('click',()=>toggleMenu(false));
-$('m_gfx').addEventListener('change',()=>{ SET.gfx=+$('m_gfx').value|0; saveSettings(); });
+$('m_gfx').addEventListener('change',()=>{ SET.gfx=+$('m_gfx').value|0; saveSettings(); syncArt(); });
+if($('m_depth')) $('m_depth').addEventListener('change',()=>{ SET.depth=+$('m_depth').value|0; saveSettings(); syncArt(); });
 $('m_timer').addEventListener('change',()=>{ SET.timer=$('m_timer').checked?1:0; saveSettings(); });
 $('m_fs').addEventListener('click',()=>toggleFullscreen());
 $('b_menu').addEventListener('click',e=>{ e.stopPropagation(); toggleMenu(); });
@@ -848,7 +889,8 @@ function farLabel(o){ return o.ai>=8?"the journey's end":o.ai>=7?'Dusk':`${AREAS
 function fmtT(t,cs){ t=Math.max(0,t); const m=Math.floor(t/60), s=t-m*60; return `${m}:${(cs?s.toFixed(1):String(Math.floor(s))).padStart(cs?4:2,'0')}`; }
 game.P=P; game.relics=new Set(); game.secretsSpent=new Set(); game.secretFrom=null; game.transFn=null;
 let A=null; // current area runtime
-let camX=0, camY=0;
+let camX=0, camY=0, prevCamX=0, prevCamY=0, prevPX=80, prevPY=392, renderA=1;
+function holdView(){ prevCamX=camX; prevCamY=camY; prevPX=P.x; prevPY=P.y; }
 const ETYPE={wisp:{hp:1,fly:60,h:0},walker:{hp:2,h:74},flyer:{hp:1,h:50,fly:135},thrower:{hp:2,h:76},spitter:{hp:2,h:60,fly:105},stalker:{hp:2,h:118},frygar:{hp:1,h:64},guard:{hp:2,h:84}};
 function gyOr(x){ const g=A.d.gy(x); return g<1e8?g:BASE; }
 function mkEnemy(e){
@@ -878,9 +920,9 @@ function setupArea(i){
   if(i>=1&&i<=7&&!d.secret){ game.splits[i-1]=runT(); if(game.fromStart) showSplit(i-1); noteFar(i,0); }
   game.paint=null; // v10
   if(!d.throne) game.throne=null;
-  camX=0; camY=0; game.bossBanner=null;
+  camX=0; camY=0; holdView(); game.bossBanner=null;
   playMusic(d.music);
-  const keep=d.imgs.map(x=>x[0]); dropBands(keep); keep.forEach(bands);
+  syncArt();
   game.titleDur=game.cardSeen[i]?1.8:4; game.cardSeen[i]=1; game.areaTitle=game.titleDur; // v11.4: a land's card is short only after this sitting has already shown it. A new land stays at 4s.
   game.log.push(['area',i,+game.t.toFixed(1)]);
   resetCover();
@@ -1072,7 +1114,7 @@ function fall(){
   const FB=A.boss; if(GOD){ respawn(FB&&!FB.calm&&FB.st!=='sleep'?FB.a0+20:A.act===2?Math.max(P.safeX,A.d.act2+6):P.safeX); return; }
   P.fellT=1; loseLife('fall');
 }
-function respawn(x){ game.fade=0.9; P.x=x; P.y=A.d.gy(x); if(P.y>1e8) P.y=BASE; P.vx=0; P.vy=0; P.ground=true; P.plat=null; P.hurtT=0.6; P.fellT=0; }
+function respawn(x){ game.fade=0.9; P.x=x; P.y=A.d.gy(x); if(P.y>1e8) P.y=BASE; P.vx=0; P.vy=0; P.ground=true; P.plat=null; P.hurtT=0.6; P.fellT=0; holdView(); }
 function loseLife(why){
   if(P.dead>0||game.state!=='play') return;
   if(P.ember) dropEmber(); P.pull=null; P.stomp=false; P.adT=0; P.dashT=0; P.carry=0;
@@ -1106,8 +1148,8 @@ function exitSecret(won){
   const f=game.secretFrom; if(!f) return;
   game.state='trans'; game.transT=0; game.transDone=false; P.ctrl=false;
   game.transFn=()=>{ A=f.A; game.areaI=f.areaI; game.secretFrom=null; const d=A.d; A.shots.length=0; if(!won) P.light=Math.max(P.light,Math.min(3,f.light));
-    respawn(f.ret); P.dead=0; P.ctrl=true; P.hurtT=0.8; resetMoves(); camX=clamp(P.x-W*0.36,0,d.len-W); camY=0; playMusic(d.music);
-    const keep=d.imgs.map(x=>x[0]); dropBands(keep); keep.forEach(bands); };
+    respawn(f.ret); P.dead=0; P.ctrl=true; P.hurtT=0.8; resetMoves(); camX=clamp(P.x-W*0.36,0,d.len-W); camY=0; holdView(); playMusic(d.music);
+    syncArt(); };
   game.log.push(['secretout',f.n,won,+game.t.toFixed(1)]);
 }
 function getRelic(){
@@ -1736,7 +1778,7 @@ function updateWorld(dt){
   if(live&&!d.throne&&!d.bench&&P.x>d.len-30&&A.veil<0.5){ if(d.secret) exitSecret(true); else goArea(game.areaI+1); }
   const tg=game.areaI===7?0.9:0.3+1.7*(1-Math.exp(-P.light/15)); P.glow+=(tg-P.glow)*Math.min(1,dt*(tg>P.glow?1.6:3)); P.pulse=Math.max(0,(P.pulse||0)-dt*1.8); // v7: the light you carry builds up as you gather it
 }
-function goArea(i){ game.state='trans'; game.transT=0; game.transDone=false; game.nextArea=i; P.ctrl=false; if(game.cine) game.cine.fadeOut=true; }
+function goArea(i){ game.state='trans'; game.transT=0; game.transDone=false; game.nextArea=i; P.ctrl=false; if(game.cine) game.cine.fadeOut=true; syncArt(); }
 function startGame(fresh,night,ember){
   const i=fresh?0:START_AREA;  // after a game over it is always the very beginning
   game.runsThisSitting=(game.runsThisSitting||0)+1; // the land card is per land this sitting (cardSeen), not per journey
@@ -1766,9 +1808,14 @@ function endGame(){ game.state='end'; game.endT=0; game.stats.time=game.t-game.s
 /* ---------------- drawing ---------------- */
 const lc=document.createElement('canvas'); lc.width=W; lc.height=H; const lx=lc.getContext('2d');
 const post=document.createElement('canvas'); post.width=W; post.height=H; const px=post.getContext('2d');
-const vig=document.createElement('canvas'); vig.width=W; vig.height=H; (()=>{ const g=vig.getContext('2d');
+const vig=document.createElement('canvas'); vig.width=W; vig.height=H;
+function ensureVig(){
+  if(vigRS===RS&&vig.width===cv.width&&vig.height===cv.height) return;
+  vigRS=RS; vig.width=cv.width; vig.height=cv.height; const g=vig.getContext('2d');
+  g.setTransform(RS,0,0,RS,0,0); g.clearRect(0,0,W,H);
   const gr=g.createRadialGradient(W/2,H/2,H*0.35,W/2,H/2,H*0.95); gr.addColorStop(0,'rgba(0,0,0,0)'); gr.addColorStop(1,'rgba(10,4,0,0.62)'); g.fillStyle=gr; g.fillRect(0,0,W,H);
-  g.fillStyle='rgba(0,0,0,0.06)'; for(let y=0;y<H;y+=3) g.fillRect(0,y,W,1); })();
+  if(RS<2){ g.setTransform(1,0,0,1,0,0); g.fillStyle='rgba(0,0,0,0.06)'; for(let y=0;y<vig.height;y+=3) g.fillRect(0,y,vig.width,1); } // device rows. Dropped at RS 2, where they moiré.
+}
 // v10: the paintings are not quite still. They breathe very slowly; once in each act the far and near layers of the painting
 // drift apart and back, as if it turned to look; and when a stone wakes or an old power is calmed, the painting opens up.
 // It is only ever the backdrop: nothing over the play moves.
@@ -1802,14 +1849,32 @@ function drawBackdrop(){
   if(!draws.length) draws.push([plan.k,1]);
   for(const [i,alpha] of draws){
     const [n,at]=imgs[i]; const end=imgs[i+1]?imgs[i+1][1]:d.len; const p=clamp((cam-at+390)/(end-at+390),0,1);
-    const im=IMG[n]; const b=bands(n);
     cx.globalAlpha=alpha;
-    const layers=[[im,1.16,0.35,0],[b[0],1.28,0.7,1],[b[1],1.42,1.0,2]];
-    for(const [src,sc0,par,li] of layers){ const sc=sc0*(1+pz*(1+li*0.5)); const dw=W*sc, dh=H*sc; const slack=dw-W; const ox=-slack*0.5+slack*(0.5-p)*par*0.9+(li?(li===1?-1:1)*dx*W*0.022*li:dx*W*0.008); const oy=-(dh-H)*0.6-camY*par*0.35-spread*li*5;
-      cx.drawImage(src,pe?clamp(ox,W-dw,0):ox,oy,dw,dh); } // v10: the drift never shows a layer's edge
+    if(wantLayers()&&layersReady(n)) drawLayers(n,p,pz,dx,spread,pe);
+    else drawBands(n,p,pz,dx,spread,pe); // v10: the drift never shows a layer's edge. x1–x8 stay on this path.
   }
   cx.globalAlpha=1;
   if(pe&&pe.c[6]){ cx.save(); cx.globalCompositeOperation='lighter'; cx.fillStyle=`rgba(${pe.c[5]},${(pe.c[6]*pe.e).toFixed(3)})`; cx.fillRect(0,0,W,H); cx.restore(); }
+}
+// Every layer of one painting shares one scale (the manifest's 1.16) so an edge is never drawn twice.
+function drawLayers(n,p,pz,dx,spread,pe){
+  const e=PACK[n], sc0=e.parallax.scale, breath=e.parallax.breath_per_layer||[1,1.5,2];
+  e.layers.forEach((L,li)=>{
+    const im=IMG[n+'_'+L.id]; if(!im) return;
+    const sc=sc0*(1+pz*(breath[li]===undefined?1+li*0.5:breath[li]));
+    const dw=W*sc, dh=H*sc, slack=dw-W, par=L.par;
+    let ox=-slack*0.5+slack*(0.5-p)*par*0.9+(li?(li===1?-1:1)*dx*W*0.022*li:dx*W*0.008);
+    const oy=-(dh-H)*0.6-camY*par*0.35-spread*li*5;
+    if(pe) ox=clamp(ox,W-dw,0);
+    const b=L.box, fx=dw/1920, fy=dh/1080;
+    cx.drawImage(im, ox+b[0]*fx, oy+b[1]*fy, b[2]*fx, b[3]*fy);
+  });
+}
+function drawBands(n,p,pz,dx,spread,pe){
+  const im=baseImg(n); if(!im) return; const b=bands(n);
+  const layers=[[im,1.16,0.35,0],[b[0],1.28,0.7,1],[b[1],1.42,1.0,2]];
+  for(const [src,sc0,par,li] of layers){ const sc=sc0*(1+pz*(1+li*0.5)); const dw=W*sc, dh=H*sc; const slack=dw-W; const ox=-slack*0.5+slack*(0.5-p)*par*0.9+(li?(li===1?-1:1)*dx*W*0.022*li:dx*W*0.008); const oy=-(dh-H)*0.6-camY*par*0.35-spread*li*5;
+    cx.drawImage(src,pe?clamp(ox,W-dw,0):ox,oy,dw,dh); }
 }
 function groundSegs(){ const d=A.d; const x0=Math.floor(camX/8)*8-16, x1=camX+W+24; const segs=[]; let cur=null;
   for(let x=x0;x<=x1;x+=8){ const y=d.gy(x); if(y<1e8){ if(!cur){cur=[];segs.push(cur);} cur.push([x,y]); } else { if(cur){ // close exactly at the gap edge
@@ -2387,28 +2452,36 @@ const hal=document.createElement('canvas'); hal.width=Math.round(W/2); hal.heigh
 let LITE=false, perfT=0, perfN=0, perfS=0; // v9: graphics quality. SET.gfx: 0 auto, 1 full, 2 light. Auto drops to light on a slow machine.
 function gfxLite(){ return SET.gfx===2||(SET.gfx!==1&&LITE); }
 function perfWatch(rdt){ if(SET.gfx||LITE||game.state!=='play'||game.paused) return; perfT+=rdt; if(perfT<2) return; perfN++; perfS+=rdt; // measured after 2 s of play
-  if(perfN>=240){ if(perfS/perfN>0.026) LITE=true; perfN=0; perfS=0; } }
-function post_fx(){
-  if(gfxLite()){ cx.drawImage(vig,0,0); return; }
-  // v9: one half-size read of the frame feeds both the VHS colour bleed and (shrunk again and cubed) the bloom.
-  // v8 read the whole frame twice and laid five full-screen layers over it; this lays two. Same look, far cheaper.
+  if(perfN>=240){ if(perfS/perfN>0.026){ LITE=true; syncArt(); } perfN=0; perfS=0; } }
+// Bloom and the VHS bleed read only what has been drawn so far (the backdrop). The play layer is composited after.
+function postBackdrop(){
+  if(gfxLite()) return;
   hlx.globalCompositeOperation='copy'; hlx.drawImage(cv,0,0,hal.width,hal.height);
   if(BLOOM&&!(blmN++%2)){ blx.globalCompositeOperation='copy'; blx.drawImage(hal,0,0,blm.width,blm.height); blx.globalCompositeOperation='multiply'; blx.drawImage(blm,0,0); blx.drawImage(blm,0,0); }
   cx.save(); cx.globalCompositeOperation='screen'; cx.globalAlpha=0.13; cx.drawImage(hal,0,0,hal.width,hal.height,2,0,W,H);
   if(BLOOM){ cx.globalCompositeOperation='lighter'; cx.globalAlpha=0.24; cx.drawImage(blm,-6,-4,W+12,H+8); } cx.restore();
-  cx.drawImage(vig,0,0);
+}
+function postFrame(){
+  ensureVig(); cx.save(); cx.setTransform(1,0,0,1,0,0); cx.drawImage(vig,0,0); cx.restore(); base();
   const tb=(game.t*0.07)%1.6; if(tb<1){ cx.fillStyle='rgba(255,240,220,0.03)'; cx.fillRect(0,tb*H,W,5); }
 }
-function text(t,x,y,size,col,align='center',alpha=1){
-  cx.save(); cx.globalAlpha=alpha; cx.font=`${size}px Georgia, 'Times New Roman', serif`; cx.textAlign=align; cx.textBaseline='middle';
-  cx.shadowColor='rgba(0,0,0,0.85)'; cx.shadowBlur=6; cx.fillStyle=col; cx.fillText(t,x,y); cx.restore();
+// trauma² × smooth noise. Peak at trauma 1 matches the old ±5 / ±4 px. The decay of game.shake is unchanged.
+function shakeOffset(){
+  const tr=game.shake; if(tr<=0) return [0,0];
+  const k=tr*tr, t=game.t;
+  const nx=Math.sin(t*47.1)+Math.sin(t*91.7+1.3), ny=Math.sin(t*53.3+0.7)+Math.sin(t*81.1+2.1);
+  return [nx*2.5*k, ny*2*k];
 }
-function wrap(t,maxW,size){ cx.font=`${size}px Georgia, serif`; const words=t.split(' '), lines=[]; let cur=''; for(const w of words){ const tt=cur?cur+' '+w:w; if(cx.measureText(tt).width>maxW&&cur){ lines.push(cur); cur=w; } else cur=tt; } if(cur) lines.push(cur); return lines; }
-function inkWash(x,y,w,h){ const r=Math.min(16,h*0.4); cx.save(); cx.fillStyle='rgba(14,6,2,0.72)'; cx.beginPath();
-  cx.moveTo(x+r,y); cx.arcTo(x+w,y,x+w,y+h,r); cx.arcTo(x+w,y+h,x,y+h,r); cx.arcTo(x,y+h,x,y,r); cx.arcTo(x,y,x+w,y,r); cx.closePath(); cx.fill(); cx.restore(); }
-function drawStar(x,y,R,a,col){ cx.save(); cx.translate(x,y); cx.globalAlpha=a; cx.lineJoin='round'; cx.beginPath();
-  for(let k=0;k<8;k++){ const ang=k/8*TAU-Math.PI/2, r=k%2?R*0.42:R; cx.lineTo(Math.cos(ang)*r,Math.sin(ang)*r); }
-  cx.closePath(); cx.lineWidth=3; cx.strokeStyle='rgba(12,4,1,0.95)'; cx.stroke(); cx.fillStyle=col; cx.fill(); cx.restore(); }
+function text(t,x,y,size,col,align='center',alpha=1){
+  pen.save(); pen.globalAlpha=alpha; pen.font=`${size}px Georgia, 'Times New Roman', serif`; pen.textAlign=align; pen.textBaseline='middle';
+  pen.shadowColor='rgba(0,0,0,0.85)'; pen.shadowBlur=6; pen.fillStyle=col; pen.fillText(t,x,y); pen.restore();
+}
+function wrap(t,maxW,size){ pen.font=`${size}px Georgia, serif`; const words=t.split(' '), lines=[]; let cur=''; for(const w of words){ const tt=cur?cur+' '+w:w; if(pen.measureText(tt).width>maxW&&cur){ lines.push(cur); cur=w; } else cur=tt; } if(cur) lines.push(cur); return lines; }
+function inkWash(x,y,w,h){ const r=Math.min(16,h*0.4); pen.save(); pen.fillStyle='rgba(14,6,2,0.72)'; pen.beginPath();
+  pen.moveTo(x+r,y); pen.arcTo(x+w,y,x+w,y+h,r); pen.arcTo(x+w,y+h,x,y+h,r); pen.arcTo(x,y+h,x,y,r); pen.arcTo(x,y,x+w,y,r); pen.closePath(); pen.fill(); pen.restore(); }
+function drawStar(x,y,R,a,col){ pen.save(); pen.translate(x,y); pen.globalAlpha=a; pen.lineJoin='round'; pen.beginPath();
+  for(let k=0;k<8;k++){ const ang=k/8*TAU-Math.PI/2, r=k%2?R*0.42:R; pen.lineTo(Math.cos(ang)*r,Math.sin(ang)*r); }
+  pen.closePath(); pen.lineWidth=3; pen.strokeStyle='rgba(12,4,1,0.95)'; pen.stroke(); pen.fillStyle=col; pen.fill(); pen.restore(); }
 // v11.4: a line lifts only for a gap, a moving floor, a hazard or a tide in the next stretch (P.x-40 to P.x+260).
 // The choice is made once, in startLine. A lifted line sits in the top band, under the hint, clear of the left wash.
 function subLift(){
@@ -2427,6 +2500,7 @@ function subBox(n,lift,legend){
 }
 function titleFade(t){ const dur=game.titleDur||4; return Math.min(1,t)*Math.min(1,Math.max(0,(dur-t)*1.5)); }
 function drawHUD(){
+  const cx=pen; // the overlay canvas: bloom never touches the counters, the subtitle or the cards
   const n=Math.max(0,P.light); const x0=32,y0=46;
   const shines=Math.floor(n/SHINE_COST), rem=n%SHINE_COST;
   const danger=n<=0, thin=!danger&&n<SHINE_COST; // 0: the next hit takes a life. 1–2: no shine, one hit from empty.
@@ -2502,7 +2576,7 @@ function drawHUD(){
   if(game.paused&&!game.veil){ cx.fillStyle='rgba(0,0,0,0.55)'; cx.fillRect(0,0,W,H); }
   if(DEBUG) text(`x ${P.x|0} y ${P.y|0} light ${P.light} area ${game.areaI} ${game.state}`,W-8,H-10,11,'#9f9','right');
 }
-function cardRule(a){ const y=H*0.34+54; const g=cx.createLinearGradient(W/2-160,0,W/2+160,0); g.addColorStop(0,'rgba(255,220,160,0)'); g.addColorStop(0.5,`rgba(255,220,160,${0.6*a})`); g.addColorStop(1,'rgba(255,220,160,0)'); cx.fillStyle=g; cx.fillRect(W/2-160,y,320,1.2); }
+function cardRule(a){ const y=H*0.34+54; const g=pen.createLinearGradient(W/2-160,0,W/2+160,0); g.addColorStop(0,'rgba(255,220,160,0)'); g.addColorStop(0.5,`rgba(255,220,160,${0.6*a})`); g.addColorStop(1,'rgba(255,220,160,0)'); pen.fillStyle=g; pen.fillRect(W/2-160,y,320,1.2); }
 function actLine(d,n){ return (game.night?'The Long Night   ·   ':'')+d.num+(d.act2&&game.areaI?`   ·   Act ${n}`:''); }
 function drawCine(){
   const c=game.cine; if(!c) return; const t=c.t;
@@ -2520,14 +2594,16 @@ function drawWorld(){
   const d=A.d;
   drawBackdrop();
   silLayer(d.fg,0.55,false);
-  const shx=game.shake>0?(Math.random()-.5)*10*game.shake:0, shy=game.shake>0?(Math.random()-.5)*8*game.shake:0;
-  cx.save(); cx.translate(-Math.round(camX)+shx,-Math.round(camY)+shy);
+  if(!gfxLite()) drawAir();
+  postBackdrop();
+  const sh=shakeOffset(), shx=sh[0], shy=sh[1];
+  cx.save(); cx.translate(-camX+shx,-camY+shy);
   drawWall(); drawGround(); drawKneelMark(); drawCold(); drawThrone(); drawVeil(); drawShrine(); drawLanterns(); drawHang(); drawWays(); drawSolids(); drawHazards(); drawCats(); drawBells(); drawNPCs(); drawFolk(); drawMotes(); drawSecrets(); drawNightSecrets(); drawBossHazards(); drawShadows(); drawBoss(); drawEnemies();
   if(d.bench){ const bx=d.bench.x-14, gy=d.gy(bx); cx.fillStyle='#1c0c0a'; cx.fillRect(bx-4,gy-16,40,5); cx.fillRect(bx,gy-16,3,16); cx.fillRect(bx+30,gy-16,3,16); cx.fillRect(bx-4,gy-34,3,22); }
   drawPlayer(); drawCarried(); drawShots(); drawParticles();
   cx.restore();
-  drawLighting(); drawGlow(); if(!gfxLite()) drawAir();
-  if(A.eyes.length){ cx.save(); cx.translate(-Math.round(camX)+shx,-Math.round(camY)+shy); drawEyes(); cx.restore(); }
+  drawLighting(); drawGlow();
+  if(A.eyes.length){ cx.save(); cx.translate(-camX+shx,-camY+shy); drawEyes(); cx.restore(); }
   silLayer(d.fg,1.25,true);
   if(game.areaI===7){ // dusk garden: everyone's lights
     cx.save(); cx.globalCompositeOperation='lighter'; const n=50+Math.min(120,(game.stats.given||0)*5); const r=rngf(77);
@@ -2539,15 +2615,17 @@ function drawWorld(){
   if(game.ending&&game.ending.out){ const t=game.ending.t-game.ending.outT; cx.fillStyle=`rgba(0,0,0,${clamp(t/3.5,0,1)})`; cx.fillRect(0,0,W,H); }
   drawCine();
   if(game.flash>0){ cx.fillStyle=`rgba(120,20,10,${game.flash*0.5})`; cx.fillRect(0,0,W,H); }
+  postFrame();
 }
 function drawTitle(){
   base(); cx.fillStyle='#000'; cx.fillRect(0,0,W,H);
-  const t=game.t, a=game.title.a; const im=IMG.s01; const z=1.12+0.03*Math.sin(t*0.1);
-  cx.globalAlpha=a; cx.drawImage(im,W/2-W*z/2+Math.sin(t*0.07)*10,H/2-H*z/2,W*z,H*z); cx.globalAlpha=1;
+  const t=game.t, a=game.title.a; const im=baseImg('s01'); const z=1.12+0.03*Math.sin(t*0.1);
+  cx.globalAlpha=a; if(im) cx.drawImage(im,W/2-W*z/2+Math.sin(t*0.07)*10,H/2-H*z/2,W*z,H*z); cx.globalAlpha=1;
   const g=cx.createLinearGradient(0,0,0,H); g.addColorStop(0,'rgba(0,0,0,0.4)'); g.addColorStop(0.5,'rgba(0,0,0,0.08)'); g.addColorStop(1,'rgba(0,0,0,0.78)'); cx.fillStyle=g; cx.fillRect(0,0,W,H);
   cx.save(); cx.globalCompositeOperation='lighter'; const r=rngf(5); for(let i=0;i<50;i++){ const x=(r()*W+t*(4+r()*10))%W, y=((r()*H-t*(3+r()*8))%H+H)%H; cx.fillStyle=`rgba(255,210,140,${0.25+0.25*Math.sin(t+i)})`; cx.beginPath(); cx.arc(x,y,1+r()*1.5,0,TAU); cx.fill(); } cx.restore();
   // the wanderer, small, on the title
   drawFigure(cx,W*0.5,H*0.62,1,t*2,1.1,{});
+  postBackdrop(); postFrame(); pen=hx;
   if(game.dmShow){ drawDeathMap(a); return; } // v11
   text('FANTOR',W/2,H*0.24,66,'#fff0d2','center',a);
   text("THE   WANDERER'S   LIGHT",W/2,H*0.24+50,16,'#ffd59a','center',a*0.9);
@@ -2563,14 +2641,14 @@ function drawTitle(){
     if(n&&n.runs) q.push(`long nights ${n.runs}`+(n.far?`     furthest  ${farLabel(n)}`:''));
     const e=r.ember; if(e&&e.runs) q.push(`ember runs ${e.runs}`+(e.far?`     furthest  ${farLabel(e)}`:'')); // v11
     if(q.length) text(q.join('          '),W/2,H*0.72+52,11,'rgba(255,222,190,0.62)','center',a); }
-  text('v11.4',W-10,H-13,9,'rgba(255,220,190,0.35)','right',a);
+  text('v12.0',W-10,H-13,9,'rgba(255,220,190,0.35)','right',a);
   if(dmAny()) text(touchMode?'tap here: where the light has gone out':'M  where the light has gone out',W-14,18,11,'rgba(255,222,190,0.6)','right',a);
   text(touchMode?'◀ ▶ walk    ⤒ jump    ⌄ crouch    ✦ shine':'← →  walk     ↑ jump     ↓ crouch     X  shine     Esc menu',W/2,H-32,13,'rgba(255,230,200,0.8)','center',a);
   text('a journey through the art of The Road to Fantor',W/2,H-13,10,'rgba(255,220,190,0.5)','center',a);
 }
 // v11: the lifetime map, one row per land, a count of every time the light has gone out there, in every journey kept in this browser
 function dmAny(){ const d=dmGet(); return d.day.some(v=>v>0)||d.night.some(v=>v>0); }
-function drawDeathMap(a){ const d=dmGet(), nn=d.night.some(v=>v>0), r=recGet(), runs=['day','night','ember'].reduce((q,j)=>q+((r[j]&&r[j].runs)|0),0);
+function drawDeathMap(a){ const cx=pen; const d=dmGet(), nn=d.night.some(v=>v>0), r=recGet(), runs=['day','night','ember'].reduce((q,j)=>q+((r[j]&&r[j].runs)|0),0);
   cx.save(); cx.globalAlpha=a*0.8; cx.fillStyle='#090504'; cx.fillRect(0,0,W,H); cx.restore();
   text('Where the light has gone out',W/2,48,26,'#fff0d6','center',a);
   text(`journeys kept in this browser: ${runs}`,W/2,76,12,'rgba(255,222,190,0.7)','center',a);
@@ -2585,7 +2663,7 @@ function drawDeathMap(a){ const d=dmGet(), nn=d.night.some(v=>v>0), r=recGet(), 
 // v11: a card to keep, drawn off-screen and saved as a PNG
 function cardCanvas(){ const C=document.createElement('canvas'); C.width=1200; C.height=675; const c=C.getContext('2d');
   const T=(t,x,y,sz,col,al='center')=>{ c.font=`${sz}px Georgia, 'Times New Roman', serif`; c.textAlign=al; c.textBaseline='middle'; c.shadowColor='rgba(0,0,0,0.85)'; c.shadowBlur=8; c.fillStyle=col; c.fillText(t,x,y); };
-  c.fillStyle='#000'; c.fillRect(0,0,1200,675); const im=game.state==='end'?IMG.s23:IMG.s15; try{ if(im) c.drawImage(im,0,0,1200,675); }catch(_){}
+  c.fillStyle='#000'; c.fillRect(0,0,1200,675); const im=baseImg(game.state==='end'?'s23':'s15'); try{ if(im) c.drawImage(im,0,0,1200,675); }catch(_){}
   c.fillStyle='rgba(0,0,0,0.62)'; c.fillRect(0,0,1200,675);
   const r=recGet(), d=dmGet(), s=game.stats||{};
   T('FANTOR',600,70,64,'#fff0d2'); T("THE  WANDERER'S  LIGHT",600,118,20,'#ffd59a');
@@ -2598,7 +2676,7 @@ function cardCanvas(){ const C=document.createElement('canvas'); C.width=1200; C
   for(let i=0;i<cols;i++){ const x=100+cw*(i+0.5); T(i<7?AREAS[i].num:'Dusk',x,y0+36,20,'#ffd59a'); T(String(n[i]),x,y0+68,26,'#fff6e6'); }
   T(`this run: light gathered ${s.motes|0}, shadows calmed ${s.calmed|0}, old powers calmed ${s.bosses|0}`,600,y0+116,17,'#ffe6cc');
   T('AI-generated art, created and curated by Eh AyeC',600,610,15,'rgba(255,225,195,0.85)');
-  T('https://ehayec.itch.io/fantor-the-wanderers-light',600,638,16,'#ffcf9a'); T('v11.4',1185,660,11,'rgba(255,220,190,0.5)','right');
+  T('https://ehayec.itch.io/fantor-the-wanderers-light',600,638,16,'#ffcf9a'); T('v12.0',1185,660,11,'rgba(255,220,190,0.5)','right');
   return C; }
 function saveCard(){ if(!(game.state==='end'||game.state==='gameover')) return; let url; try{ url=cardCanvas().toDataURL('image/png'); }catch(_){ return; }
   const again=game.cardT&&game.t-game.cardT<8; game.cardT=game.t; game.cardN=(game.cardN|0)+1; let u=url;
@@ -2619,9 +2697,10 @@ const CREDITS=[["FANTOR",34,'#fff0d2'],["THE WANDERER'S LIGHT",14,'#ffd59a'],[''
   ['MUSIC',12,'#ffcf9a'],['an AI-assisted score',15,'#fff0e0'],['',0,''],['',0,''],
   ['Thank you for walking with the light.',17,'#fff0d6']];
 function drawEnd(){
-  base(); const t=game.endT; const im=IMG.s23; const z=1.06+0.02*Math.min(1,t/30);
-  cx.fillStyle='#000'; cx.fillRect(0,0,W,H); cx.globalAlpha=clamp(t/3,0,1); cx.drawImage(im,W/2-W*z/2,H/2-H*z/2,W*z,H*z); cx.globalAlpha=1;
+  base(); const t=game.endT; const im=baseImg('s23'); const z=1.06+0.02*Math.min(1,t/30);
+  cx.fillStyle='#000'; cx.fillRect(0,0,W,H); cx.globalAlpha=clamp(t/3,0,1); if(im) cx.drawImage(im,W/2-W*z/2,H/2-H*z/2,W*z,H*z); cx.globalAlpha=1;
   cx.fillStyle='rgba(0,0,0,0.45)'; cx.fillRect(0,0,W,H);
+  postBackdrop(); postFrame(); pen=hx;
   // v10: after the card, an honest credits roll over the painting, then the card again (screenshot it if you like)
   const CR0=16, crN=CREDITS.length, crEnd=CR0+1.5+(H+crN*24+40)/26, cardA=t<CR0?1:t<CR0+1.5?1-(t-CR0)/1.5:clamp((t-crEnd)/1.5,0,1);
   if(t>CR0+1.5&&t<crEnd){ const y0=H+20-(t-CR0-1.5)*26; CREDITS.forEach(([tx,sz,col],i)=>{ const y=y0+i*24; if(y<-20||y>H+20||!tx) return;
@@ -2634,7 +2713,7 @@ function drawEnd(){
     ...(game.newBest?[['Best','a new best']]:game.oldBest?[['Best',fmtT(game.oldBest,1)]]:[])];
   rows.forEach(([k,v],i)=>{ const aa=clamp((t-2-i*0.4)/1,0,1)*cardA; text(k,W/2-12,H*0.38+i*25,16,'#ffdcae','right',aa); text(String(v),W/2+12,H*0.38+i*25,16,'#fff6e6','left',aa); });
   if(game.nightNew) text('The Long Night has begun. It waits on the title.',W/2,H-56,15,'#c8d4ff','center',clamp((t-6)/1.5,0,1)*cardA);
-  text("FANTOR: The Wanderer's Light  v11.4",W/2,H-10,9,'rgba(255,220,190,0.45)','center',a);
+  text("FANTOR: The Wanderer's Light  v12.0",W/2,H-10,9,'rgba(255,220,190,0.45)','center',a);
   if(t>4) text(touchMode?'Tap to return':'Press Enter to return',W/2,H-30,14,'#ffe8cc','center',0.5+0.4*Math.sin(t*2));
   drawCardBtn(t); // v11
 }
@@ -2653,9 +2732,14 @@ function clusterMarks(marks, gap){
   return groups;
 }
 function drawGameOver(){
-  base(); const t=game.goT; const im=IMG.s15; const z=1.1+0.02*Math.sin(t*0.3);
-  cx.fillStyle='#000'; cx.fillRect(0,0,W,H); cx.globalAlpha=clamp(t/2.5,0,1)*0.5; cx.drawImage(im,W/2-W*z/2,H/2-H*z/2,W*z,H*z); cx.globalAlpha=1;
+  base(); const t=game.goT; const im=baseImg('s15'); const z=1.1+0.02*Math.sin(t*0.3);
+  cx.fillStyle='#000'; cx.fillRect(0,0,W,H); cx.globalAlpha=clamp(t/2.5,0,1)*0.5; if(im) cx.drawImage(im,W/2-W*z/2,H/2-H*z/2,W*z,H*z); cx.globalAlpha=1;
   cx.fillStyle='rgba(30,0,0,0.5)'; cx.fillRect(0,0,W,H);
+  postBackdrop(); postFrame(); pen=hx;
+  drawGameOverUi(t);
+}
+function drawGameOverUi(t){
+  const cx=pen;
   const a=clamp((t-0.4)/1.2,0,1), s=game.stats;
   text('GAME OVER',W/2,H*0.15,54,'#ffe0c4','center',a);
   text(`The light went out in ${AREAS[game.goArea].title}.`,W/2,H*0.15+42,17,'#ffcfa0','center',a*0.9);
@@ -2692,35 +2776,49 @@ function drawGameOver(){
   text(game.night?'No continues. The long night begins again at the shore.':'No continues. The journey begins again at the shore.',W/2,H-56,14,'#ffd9b8','center',clamp((t-2.5)/1,0,1)*0.85);
   if(t>1.0) text(touchMode?'Tap to begin again':'Press Enter to begin again',W/2,H-30,16,'#fff0dc','center',0.5+0.4*Math.sin(t*2.5));
   drawCardBtn(t); // v11
-  text("FANTOR: The Wanderer's Light  v11.4",W/2,H-10,9,'rgba(255,220,190,0.4)','center',a); // v10
+  text("FANTOR: The Wanderer's Light  v12.0",W/2,H-10,9,'rgba(255,220,190,0.4)','center',a); // v10
 }
 function drawLoading(){
-  base(); cx.fillStyle='#050302'; cx.fillRect(0,0,W,H);
+  base(); cx.fillStyle='#050302'; cx.fillRect(0,0,W,H); pen=hx;
   const p=load.done/Math.max(1,load.total); text('FANTOR',W/2,H/2-30,40,'#ffe6c0','center',0.9);
-  cx.fillStyle='rgba(255,210,150,0.2)'; cx.fillRect(W/2-120,H/2+10,240,4); cx.fillStyle='#ffd08a'; cx.fillRect(W/2-120,H/2+10,240*p,4);
+  pen.fillStyle='rgba(255,210,150,0.2)'; pen.fillRect(W/2-120,H/2+10,240,4); pen.fillStyle='#ffd08a'; pen.fillRect(W/2-120,H/2+10,240*p,4);
   if(load.err) text('Could not load: '+load.err,W/2,H/2+40,12,'#f99');
 }
+function pushView(){
+  const a=renderA, sx=camX, sy=camY, px=P.x, py=P.y;
+  const vx=lerp(prevCamX,camX,a), vy=lerp(prevCamY,camY,a);
+  camX=Math.round(vx*RS)/RS; camY=Math.round(vy*RS)/RS;
+  P.x=lerp(prevPX,px,a); P.y=lerp(prevPY,py,a);
+  drawnX=camX; drawnY=camY;
+  return ()=>{ camX=sx; camY=sy; P.x=px; P.y=py; };
+}
+let drawnX=0, drawnY=0;
 function render(){
-  if(game.state==='loading'){ drawLoading(); return; }
-  if(game.state==='title') drawTitle();
-  else if(game.state==='end') drawEnd();
-  else if(game.state==='gameover') drawGameOver();
-  else { drawWorld(); if(A) drawHUD();
-    if(game.state==='trans'){ const t=game.transT; const a=t<1.2?clamp(t/1.0,0,1):clamp(1-(t-1.2)/0.8,0,1); cx.fillStyle=`rgba(0,0,0,${a})`; cx.fillRect(0,0,W,H); } }
-  if(game.fade>0&&game.state==='play'){ cx.fillStyle=`rgba(0,0,0,${game.fade})`; cx.fillRect(0,0,W,H); }
-  post_fx();
+  const pop=pushView();
+  try{
+    hudPrepare(); pen=cx;
+    if(game.state==='loading'){ drawLoading(); return; }
+    if(game.state==='title') drawTitle();
+    else if(game.state==='end') drawEnd();
+    else if(game.state==='gameover') drawGameOver();
+    else { drawWorld(); pen=hx; if(A) drawHUD();
+      if(game.state==='trans'){ const t=game.transT; const a=t<1.2?clamp(t/1.0,0,1):clamp(1-(t-1.2)/0.8,0,1); hx.fillStyle=`rgba(0,0,0,${a})`; hx.fillRect(0,0,W,H); }
+      if(game.fade>0&&game.state==='play'){ hx.fillStyle=`rgba(0,0,0,${game.fade})`; hx.fillRect(0,0,W,H); } }
+    pen=cx;
+  } finally { pop(); }
 }
 
 /* ---------------- loop ---------------- */
-let last=performance.now(), acc=0; const STEP=1/60;
+let last=performance.now(), acc=0, manual=false; const STEP=1/60;
 game.timeScale=1;
-function frame(now){
+function stepFrame(now){
   let dt=(now-last)/1000; last=now; if(dt>0.25) dt=0.25; perfWatch(dt); if(game.slowT>0){ game.slowT-=dt; dt*=0.35; } acc+=dt*game.timeScale;
-  let n=0; while(acc>=STEP&&n<40){ update(STEP); acc-=STEP; n++; for(const k in pressed) delete pressed[k]; tap=null; }
+  let n=0; while(acc>=STEP&&n<40){ prevCamX=camX; prevCamY=camY; prevPX=P.x; prevPY=P.y; update(STEP); acc-=STEP; n++; for(const k in pressed) delete pressed[k]; tap=null; }
+  renderA=clamp(acc/STEP,0,1);
   syncTouch();
   render();
-  requestAnimationFrame(frame);
 }
+function frame(now){ if(manual) return; stepFrame(now); requestAnimationFrame(frame); }
 window.addEventListener('error',e=>{ game.log.push(['error',String(e.message)]); });
 
 /* ---------------- loading ---------------- */
@@ -2728,16 +2826,42 @@ const load={total:0,done:0,err:null};
 function track(p){ load.total++; return p.then(()=>{load.done++;},e=>{ load.err=String(e.message||e); console.error(e); }); }
 const imgNames=[]; for(let i=1;i<=23;i++) imgNames.push('s'+String(i).padStart(2,'0')); imgNames.push('x1','x2','x3','x4','x5','x6','x7','x8');
 const musNames=['title','shore','forest','river','kingdom','war','dark','heart','garden'];
+artOn=true;
 Promise.all([
   ...imgNames.map(n=>track(loadImg(n))),
   ...CHR.map(n=>track(loadSpr(n))),
   ...Object.keys(LINES).map(n=>track(fetchRaw('v_'+n,'assets/vo/'+n+'.mp3'))),
   ...musNames.map(n=>track(fetchRaw('m_'+n,'assets/music/'+n+'.mp3'))),
-]).then(()=>{ game.state='title'; if(ac) playMusic('title',2); if(Q.has('rec')) audioInit(); if(AUTO){ audioInit(); startGame(false,Q.has('night')); } });
+  fetch('g1_manifest.json').then(r=>r.ok?r.json():null).then(m=>{ if(!m) return; for(const land of m.lands||[]) for(const p of land.paintings||[]) if(p.in_pack) PACK[p.name]=p; manifestReady=true; }).catch(()=>{}),
+]).then(()=>{ syncArt(); game.state='title'; if(ac) playMusic('title',2); if(Q.has('rec')) audioInit(); if(AUTO){ audioInit(); startGame(false,Q.has('night')); } });
 // keep only nearby music decoded (phones have little memory)
 setInterval(()=>{ if(!ac) return; const cur=A?A.d.music:'title'; const nx=A&&AREAS[game.areaI+1]?AREAS[game.areaI+1].music:'title'; const keep=new Set(['m_title','m_'+cur,'m_'+nx]);
   for(const k in bufs) if(k.startsWith('m_')&&!keep.has(k)&&!(musCur&&'m_'+musCur.name===k)){ delete bufs[k]; delete decoding[k]; } for(const k of keep) decode(k); },3000);
 
+function playBoxes(){
+  if(!A) return [];
+  const boxes=[], x0=camX, y0=camY;
+  const scr=(x,y,w,h,kind)=>boxes.push({kind,x:x-x0,y:y-y0,w,h});
+  if(!(P.dead>0)){ const h=PH*PS, w=36; scr(P.x-w/2,P.y-h,w,h,'player'); }
+  for(const e of A.enemies){
+    if(e.calm||e.x<x0-8||e.x>x0+W+8) continue;
+    if(e.t==='wisp') scr(e.x-16,e.y-16,32,32,'enemy');
+    else { const h=e.h||60; scr(e.x-h*0.28,e.y-h,h*0.56,h,'enemy'); }
+  }
+  if(A.boss&&!A.boss.calm&&A.boss.st!=='sleep'&&A.boss.x>x0-40&&A.boss.x<x0+W+40){ const B=A.boss, h=B.h, w=h*0.5; scr(B.x-w/2,B.y-h,w,h,'enemy'); }
+  for(const hz of A.haz){
+    if(hz.x<x0||hz.x>x0+W) continue;
+    const gy=A.d.gy(hz.x), top=hz.k==='drop'&&hz.fall?hz.ry-16:(gy<1e8?gy:BASE)-(hz.act?120:20), hh=hz.k==='drop'&&hz.fall?36:(hz.act?130:24);
+    scr(hz.x-14,top,28,hh,'hazard');
+  }
+  for(const s of A.shots){ if(s.wait>0||s.x<x0||s.x>x0+W) continue; const r=(s.r||10)+6; scr(s.x-r,s.y-r,r*2,r*2,'shot'); }
+  for(const g of A.d.gaps) for(const edge of [g[0],g[1]]){
+    if(edge<x0+4||edge>x0+W-4) continue;
+    const y=A.d.gy(edge===g[0]?edge-1:edge+1); if(!(y<1e8)) continue;
+    boxes.push({kind:'gap',x:edge-x0-4,y:y-y0-3,w:8,h:6});
+  }
+  return boxes;
+}
 /* ---------------- hooks for recording and testing ---------------- */
 /*@DEV*/window.fantorRec={
   start(){ const vs=cv.captureStream(30); const tracks=[...vs.getVideoTracks()]; if(recDest) tracks.push(...recDest.stream.getAudioTracks());
@@ -2755,6 +2879,6 @@ window.fantorTest={ deathPhrase, deathListLine, clusterMarks, backdropPlan, card
   subNow:()=>{ const lift=!!vo.lift, legend=!!vo.legend; const ls=vo.sub?wrap(vo.sub,lift?W*0.58:W*0.78,17):[]; return {lift,legend,lines:ls.length,box:subBox(Math.max(1,ls.length),lift,legend)}; },
   titleFade,
   folk:()=>A?A.folk.map(f=>({name:f.name,x:f.x,said:!!f.said,reach:f.reach||120})):[] };
-window.fantorDebug={ cam:()=>[camX,camY], line:(id)=>{ if(!id){ vo.sub=''; vo.subA=0; vo.lift=false; vo.legend=false; vo.queue.length=0; if(vo.cur){ try{ vo.cur.src&&vo.cur.src.stop(); }catch(_){} vo.cur=null; } return; } vo.queue.length=0; if(vo.cur){ try{ vo.cur.src&&vo.cur.src.stop(); }catch(_){} vo.cur=null; } vo.sub=LINES[id]||String(id); vo.subA=1; vo.lift=subLift(); vo.legend=!!(game.legendT>0); }, kill:()=>{ if(game.state==='play'&&!P.dead){ const g=GOD; GOD=false; loseLife('debug'); GOD=g; } }, setLives:(n)=>{ game.lives=n; }, god:(v)=>{ GOD=!!v; }, boss:()=>A&&A.boss&&{st:A.boss.st,hp:A.boss.hp,calm:A.boss.calm,x:Math.round(A.boss.x),phase:A.boss.phase,atk:A.boss.atk}, bossHp:(n)=>{ const B=A.boss; B.hp=n; while(B.phase<B.nph&&B.hp<=B.th[B.phase-1]) bossPhase(); }, deaths:()=>game.deaths, tp:(x,light)=>{ P.x=x; P.y=A.d.gy(x); P.vy=0; camX=clamp(x-W*0.36,0,A.d.len-W); for(const t of A.trig) if(t.x<x) { t.done=true; } for(const fo of A.folk) if(fo.x<x) fo.said=true; vo.queue.length=0; if(vo.cur){ try{ vo.cur.src&&vo.cur.src.stop(); }catch(_){} vo.cur.end=0; } if(light!==undefined) P.light=light; }, goArea, setLight:(n)=>{P.light=n;}, enterSecret, relics:()=>[...game.relics], giveRelics:(n)=>{ for(let i=0;i<n;i++) game.relics.add(i); }, areas:AREAS, nareas:NIGHT, act:()=>A&&A.act, night:()=>game.night, splits:()=>game.splits, store, moves:(n)=>{ if(n!==undefined) game.moves=n; return game.moves; }, P:()=>P, A:()=>A, state:()=>({act:A&&A.act,night:game.night,moves:game.moves,ember:!!P.ember,secret:A&&A.d.secret||0,relics:game.relics.size,audio:ac?ac.state:null,menu:menuOpen,veil:!!game.veil,paused:!!game.paused,rs:RS,cw:cv.width,ch:cv.height,state:game.state,area:game.areaI,x:Math.round(P.x),y:Math.round(P.y),light:P.light,lives:game.lives,dead:P.dead,stats:game.stats,throne:game.throne&&game.throne.phase,vo:vo.cur&&vo.cur.id,boss:A&&A.boss?{st:A.boss.st,hp:A.boss.hp,calm:A.boss.calm,phase:A.boss.phase}:null,shrine:A&&A.shrine?{need:A.shrine.need,awake:A.shrine.awake}:null}) };/*@/DEV*/
+window.fantorDebug={ boxes:playBoxes, drawn:()=>[drawnX,drawnY], art:()=>Object.keys(IMG).filter(k=>k.indexOf('@1920')>0||/_L\d$/.test(k)), manual(v){ manual=!!v; if(!manual){ last=performance.now(); requestAnimationFrame(frame); } }, frame:stepFrame, cam:()=>[camX,camY], line:(id)=>{ if(!id){ vo.sub=''; vo.subA=0; vo.lift=false; vo.legend=false; vo.queue.length=0; if(vo.cur){ try{ vo.cur.src&&vo.cur.src.stop(); }catch(_){} vo.cur=null; } return; } vo.queue.length=0; if(vo.cur){ try{ vo.cur.src&&vo.cur.src.stop(); }catch(_){} vo.cur=null; } vo.sub=LINES[id]||String(id); vo.subA=1; vo.lift=subLift(); vo.legend=!!(game.legendT>0); }, kill:()=>{ if(game.state==='play'&&!P.dead){ const g=GOD; GOD=false; loseLife('debug'); GOD=g; } }, setLives:(n)=>{ game.lives=n; }, god:(v)=>{ GOD=!!v; }, boss:()=>A&&A.boss&&{st:A.boss.st,hp:A.boss.hp,calm:A.boss.calm,x:Math.round(A.boss.x),phase:A.boss.phase,atk:A.boss.atk}, bossHp:(n)=>{ const B=A.boss; B.hp=n; while(B.phase<B.nph&&B.hp<=B.th[B.phase-1]) bossPhase(); }, deaths:()=>game.deaths, tp:(x,light)=>{ P.x=x; P.y=A.d.gy(x); P.vy=0; camX=clamp(x-W*0.36,0,A.d.len-W); for(const t of A.trig) if(t.x<x) { t.done=true; } for(const fo of A.folk) if(fo.x<x) fo.said=true; vo.queue.length=0; if(vo.cur){ try{ vo.cur.src&&vo.cur.src.stop(); }catch(_){} vo.cur.end=0; } if(light!==undefined) P.light=light; holdView(); }, goArea, setLight:(n)=>{P.light=n;}, enterSecret, relics:()=>[...game.relics], giveRelics:(n)=>{ for(let i=0;i<n;i++) game.relics.add(i); }, areas:AREAS, nareas:NIGHT, act:()=>A&&A.act, night:()=>game.night, splits:()=>game.splits, store, moves:(n)=>{ if(n!==undefined) game.moves=n; return game.moves; }, P:()=>P, A:()=>A, state:()=>({act:A&&A.act,night:game.night,moves:game.moves,ember:!!P.ember,secret:A&&A.d.secret||0,relics:game.relics.size,audio:ac?ac.state:null,menu:menuOpen,veil:!!game.veil,paused:!!game.paused,rs:RS,cw:cv.width,ch:cv.height,state:game.state,area:game.areaI,x:Math.round(P.x),y:Math.round(P.y),light:P.light,lives:game.lives,dead:P.dead,stats:game.stats,throne:game.throne&&game.throne.phase,vo:vo.cur&&vo.cur.id,boss:A&&A.boss?{st:A.boss.st,hp:A.boss.hp,calm:A.boss.calm,phase:A.boss.phase}:null,shrine:A&&A.shrine?{need:A.shrine.need,awake:A.shrine.awake}:null}) };/*@/DEV*/
 requestAnimationFrame(frame);
 })();

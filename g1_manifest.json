@@ -1,0 +1,2051 @@
+{
+ "pack": "Fantor G1 Clean canvas asset pack (v12.0)",
+ "based_on": "patternpartner/fantor-game main d4bdef7 (v11.4)",
+ "frame": [
+  1920,
+  1080
+ ],
+ "box_units": "px in the 1920x1080 frame: [x, y, w, h]; draw a cropped layer at (ox + x*dw/1920, oy + y*dh/1080, w*dw/1920, h*dh/1080)",
+ "depth_units": "inverse depth 0 = far .. 1 = near (Depth Anything V2 Small), thresholds are the layer cut points; feather is the soft band half-width",
+ "parallax_units": "same meaning as drawBackdrop's par (0.35 today's base, 1.0 today's lowest band); all layers use one scale so edges never double",
+ "fill_methods": {
+  "lama": "LaMa big-lama (Apache-2.0, ONNX Carve/LaMa-ONNX), run locally; user-approved generative fill of hidden pixels",
+  "telea": "OpenCV Telea inpainting: only spreads the painting's own neighbouring colours (fallback where LaMa invented something)"
+ },
+ "lands": [
+  {
+   "key": "shore",
+   "title": "The Shore of Wakes",
+   "secret": false,
+   "paintings": [
+    {
+     "name": "s01",
+     "at": 0,
+     "in_pack": true,
+     "base1920": "assets/img/s01@1920.webp",
+     "base1280": "assets/img/s01.webp (unchanged, keep for Light/lowres)",
+     "feather": 0.04,
+     "auto_thresholds": [
+      0.25,
+      0.609
+     ],
+     "hand_tuned": false,
+     "note": "",
+     "fill_note": "",
+     "parallax": {
+      "scale": 1.16,
+      "breath_per_layer": [
+       1.0,
+       1.5,
+       2.0
+      ]
+     },
+     "layers": [
+      {
+       "id": "L0",
+       "role": "far",
+       "file": "assets/img/s01_L0.webp",
+       "box": [
+        0,
+        0,
+        1920,
+        1080
+       ],
+       "depth": [
+        0.0,
+        0.25
+       ],
+       "par": 0.35,
+       "fill": "lama"
+      },
+      {
+       "id": "L1",
+       "role": "mid",
+       "file": "assets/img/s01_L1.webp",
+       "box": [
+        0,
+        0,
+        1920,
+        1080
+       ],
+       "depth": [
+        0.25,
+        0.609
+       ],
+       "par": 0.62,
+       "fill": "lama"
+      },
+      {
+       "id": "L2",
+       "role": "near",
+       "file": "assets/img/s01_L2.webp",
+       "box": [
+        0,
+        0,
+        1920,
+        1080
+       ],
+       "depth": [
+        0.609,
+        1.0
+       ],
+       "par": 0.8,
+       "fill": "none (the painting's own pixels)"
+      }
+     ],
+     "bytes": {
+      "base1920": 39464,
+      "L0": 21530,
+      "L1": 34558,
+      "L2": 45650
+     }
+    },
+    {
+     "name": "s02",
+     "at": 1000,
+     "in_pack": true,
+     "base1920": "assets/img/s02@1920.webp",
+     "base1280": "assets/img/s02.webp (unchanged, keep for Light/lowres)",
+     "feather": 0.04,
+     "auto_thresholds": [
+      0.391,
+      0.828
+     ],
+     "hand_tuned": true,
+     "note": "hood and glowing face kept as one figure (auto split the face from the hood)",
+     "fill_note": "",
+     "parallax": {
+      "scale": 1.16,
+      "breath_per_layer": [
+       1.0,
+       1.5,
+       2.0
+      ]
+     },
+     "layers": [
+      {
+       "id": "L0",
+       "role": "far",
+       "file": "assets/img/s02_L0.webp",
+       "box": [
+        0,
+        0,
+        1920,
+        1080
+       ],
+       "depth": [
+        0.0,
+        0.55
+       ],
+       "par": 0.35,
+       "fill": "lama"
+      },
+      {
+       "id": "L2",
+       "role": "near",
+       "file": "assets/img/s02_L2.webp",
+       "box": [
+        27,
+        0,
+        1893,
+        1080
+       ],
+       "depth": [
+        0.55,
+        1.0
+       ],
+       "par": 0.7,
+       "fill": "none (the painting's own pixels)"
+      }
+     ],
+     "bytes": {
+      "base1920": 34148,
+      "L0": 22686,
+      "L2": 33188
+     }
+    },
+    {
+     "name": "s03",
+     "at": 1950,
+     "in_pack": true,
+     "base1920": "assets/img/s03@1920.webp",
+     "base1280": "assets/img/s03.webp (unchanged, keep for Light/lowres)",
+     "feather": 0.04,
+     "auto_thresholds": [
+      0.25,
+      0.609
+     ],
+     "hand_tuned": false,
+     "note": "",
+     "fill_note": "",
+     "parallax": {
+      "scale": 1.16,
+      "breath_per_layer": [
+       1.0,
+       1.5,
+       2.0
+      ]
+     },
+     "layers": [
+      {
+       "id": "L0",
+       "role": "far",
+       "file": "assets/img/s03_L0.webp",
+       "box": [
+        0,
+        0,
+        1920,
+        1080
+       ],
+       "depth": [
+        0.0,
+        0.25
+       ],
+       "par": 0.35,
+       "fill": "lama"
+      },
+      {
+       "id": "L1",
+       "role": "mid",
+       "file": "assets/img/s03_L1.webp",
+       "box": [
+        0,
+        164,
+        1920,
+        916
+       ],
+       "depth": [
+        0.25,
+        0.609
+       ],
+       "par": 0.62,
+       "fill": "lama"
+      },
+      {
+       "id": "L2",
+       "role": "near",
+       "file": "assets/img/s03_L2.webp",
+       "box": [
+        0,
+        808,
+        1920,
+        272
+       ],
+       "depth": [
+        0.609,
+        1.0
+       ],
+       "par": 0.9,
+       "fill": "none (the painting's own pixels)"
+      }
+     ],
+     "bytes": {
+      "base1920": 35502,
+      "L0": 22800,
+      "L1": 31844,
+      "L2": 10718
+     }
+    }
+   ]
+  },
+  {
+   "key": "forest",
+   "title": "The Forest of Bent Trees",
+   "secret": false,
+   "paintings": [
+    {
+     "name": "s04",
+     "at": 0,
+     "in_pack": true,
+     "base1920": "assets/img/s04@1920.webp",
+     "base1280": "assets/img/s04.webp (unchanged, keep for Light/lowres)",
+     "feather": 0.04,
+     "auto_thresholds": [
+      0.281,
+      0.641
+     ],
+     "hand_tuned": true,
+     "note": "giant's feet and the ground they stand on kept in one layer, so the feet never slide on the sand",
+     "fill_note": "",
+     "parallax": {
+      "scale": 1.16,
+      "breath_per_layer": [
+       1.0,
+       1.5,
+       2.0
+      ]
+     },
+     "layers": [
+      {
+       "id": "L0",
+       "role": "far",
+       "file": "assets/img/s04_L0.webp",
+       "box": [
+        0,
+        0,
+        1920,
+        1080
+       ],
+       "depth": [
+        0.0,
+        0.3
+       ],
+       "par": 0.35,
+       "fill": "lama"
+      },
+      {
+       "id": "L2",
+       "role": "near",
+       "file": "assets/img/s04_L2.webp",
+       "box": [
+        0,
+        0,
+        1920,
+        1080
+       ],
+       "depth": [
+        0.3,
+        1.0
+       ],
+       "par": 0.7,
+       "fill": "none (the painting's own pixels)"
+      }
+     ],
+     "bytes": {
+      "base1920": 26100,
+      "L0": 18178,
+      "L2": 27612
+     }
+    },
+    {
+     "name": "s05",
+     "at": 1600,
+     "in_pack": true,
+     "base1920": "assets/img/s05@1920.webp",
+     "base1280": "assets/img/s05.webp (unchanged, keep for Light/lowres)",
+     "feather": 0.04,
+     "auto_thresholds": [
+      0.266,
+      0.578
+     ],
+     "hand_tuned": false,
+     "note": "",
+     "fill_note": "LaMa drew a ghost of the small figure above it on the path; far layer uses Telea",
+     "parallax": {
+      "scale": 1.16,
+      "breath_per_layer": [
+       1.0,
+       1.5,
+       2.0
+      ]
+     },
+     "layers": [
+      {
+       "id": "L0",
+       "role": "far",
+       "file": "assets/img/s05_L0.webp",
+       "box": [
+        0,
+        0,
+        1920,
+        1080
+       ],
+       "depth": [
+        0.0,
+        0.266
+       ],
+       "par": 0.35,
+       "fill": "telea"
+      },
+      {
+       "id": "L1",
+       "role": "mid",
+       "file": "assets/img/s05_L1.webp",
+       "box": [
+        0,
+        0,
+        1920,
+        1080
+       ],
+       "depth": [
+        0.266,
+        0.578
+       ],
+       "par": 0.62,
+       "fill": "lama"
+      },
+      {
+       "id": "L2",
+       "role": "near",
+       "file": "assets/img/s05_L2.webp",
+       "box": [
+        0,
+        635,
+        1920,
+        445
+       ],
+       "depth": [
+        0.578,
+        1.0
+       ],
+       "par": 0.9,
+       "fill": "none (the painting's own pixels)"
+      }
+     ],
+     "bytes": {
+      "base1920": 41084,
+      "L0": 24202,
+      "L1": 35356,
+      "L2": 17570
+     }
+    }
+   ]
+  },
+  {
+   "key": "river",
+   "title": "The Silver River Road",
+   "secret": false,
+   "paintings": [
+    {
+     "name": "s06",
+     "at": 0,
+     "in_pack": true,
+     "base1920": "assets/img/s06@1920.webp",
+     "base1280": "assets/img/s06.webp (unchanged, keep for Light/lowres)",
+     "feather": 0.04,
+     "auto_thresholds": [
+      0.281,
+      0.547
+     ],
+     "hand_tuned": false,
+     "note": "",
+     "fill_note": "",
+     "parallax": {
+      "scale": 1.16,
+      "breath_per_layer": [
+       1.0,
+       1.5,
+       2.0
+      ]
+     },
+     "layers": [
+      {
+       "id": "L0",
+       "role": "far",
+       "file": "assets/img/s06_L0.webp",
+       "box": [
+        0,
+        0,
+        1920,
+        1080
+       ],
+       "depth": [
+        0.0,
+        0.281
+       ],
+       "par": 0.35,
+       "fill": "lama"
+      },
+      {
+       "id": "L1",
+       "role": "mid",
+       "file": "assets/img/s06_L1.webp",
+       "box": [
+        0,
+        0,
+        1920,
+        1080
+       ],
+       "depth": [
+        0.281,
+        0.547
+       ],
+       "par": 0.62,
+       "fill": "lama"
+      },
+      {
+       "id": "L2",
+       "role": "near",
+       "file": "assets/img/s06_L2.webp",
+       "box": [
+        0,
+        644,
+        1920,
+        436
+       ],
+       "depth": [
+        0.547,
+        1.0
+       ],
+       "par": 0.9,
+       "fill": "none (the painting's own pixels)"
+      }
+     ],
+     "bytes": {
+      "base1920": 40506,
+      "L0": 26054,
+      "L1": 34180,
+      "L2": 16568
+     }
+    },
+    {
+     "name": "s07",
+     "at": 2400,
+     "in_pack": true,
+     "base1920": "assets/img/s07@1920.webp",
+     "base1280": "assets/img/s07.webp (unchanged, keep for Light/lowres)",
+     "feather": 0.04,
+     "auto_thresholds": [
+      0.141,
+      0.438
+     ],
+     "hand_tuned": false,
+     "note": "",
+     "fill_note": "",
+     "parallax": {
+      "scale": 1.16,
+      "breath_per_layer": [
+       1.0,
+       1.5,
+       2.0
+      ]
+     },
+     "layers": [
+      {
+       "id": "L0",
+       "role": "far",
+       "file": "assets/img/s07_L0.webp",
+       "box": [
+        0,
+        0,
+        1920,
+        1080
+       ],
+       "depth": [
+        0.0,
+        0.141
+       ],
+       "par": 0.35,
+       "fill": "lama"
+      },
+      {
+       "id": "L1",
+       "role": "mid",
+       "file": "assets/img/s07_L1.webp",
+       "box": [
+        0,
+        0,
+        1920,
+        1080
+       ],
+       "depth": [
+        0.141,
+        0.438
+       ],
+       "par": 0.62,
+       "fill": "lama"
+      },
+      {
+       "id": "L2",
+       "role": "near",
+       "file": "assets/img/s07_L2.webp",
+       "box": [
+        65,
+        304,
+        1855,
+        776
+       ],
+       "depth": [
+        0.438,
+        1.0
+       ],
+       "par": 0.9,
+       "fill": "none (the painting's own pixels)"
+      }
+     ],
+     "bytes": {
+      "base1920": 34408,
+      "L0": 21104,
+      "L1": 30780,
+      "L2": 27896
+     }
+    }
+   ]
+  },
+  {
+   "key": "kingdom",
+   "title": "The Golden Kingdom",
+   "secret": false,
+   "paintings": [
+    {
+     "name": "s08",
+     "at": 0,
+     "in_pack": true,
+     "base1920": "assets/img/s08@1920.webp",
+     "base1280": "assets/img/s08.webp (unchanged, keep for Light/lowres)",
+     "feather": 0.04,
+     "auto_thresholds": [
+      0.25,
+      0.609
+     ],
+     "hand_tuned": true,
+     "note": "tower spire: thin-feature guard",
+     "fill_note": "",
+     "parallax": {
+      "scale": 1.16,
+      "breath_per_layer": [
+       1.0,
+       1.5,
+       2.0
+      ]
+     },
+     "layers": [
+      {
+       "id": "L0",
+       "role": "far",
+       "file": "assets/img/s08_L0.webp",
+       "box": [
+        0,
+        0,
+        1920,
+        1080
+       ],
+       "depth": [
+        0.0,
+        0.25
+       ],
+       "par": 0.35,
+       "fill": "lama"
+      },
+      {
+       "id": "L1",
+       "role": "mid",
+       "file": "assets/img/s08_L1.webp",
+       "box": [
+        0,
+        0,
+        1920,
+        1080
+       ],
+       "depth": [
+        0.25,
+        0.609
+       ],
+       "par": 0.62,
+       "fill": "lama"
+      },
+      {
+       "id": "L2",
+       "role": "near",
+       "file": "assets/img/s08_L2.webp",
+       "box": [
+        0,
+        568,
+        1920,
+        512
+       ],
+       "depth": [
+        0.609,
+        1.0
+       ],
+       "par": 0.9,
+       "fill": "none (the painting's own pixels)"
+      }
+     ],
+     "bytes": {
+      "base1920": 41702,
+      "L0": 20614,
+      "L1": 51628,
+      "L2": 17816
+     }
+    },
+    {
+     "name": "s09",
+     "at": 1400,
+     "in_pack": true,
+     "base1920": "assets/img/s09@1920.webp",
+     "base1280": "assets/img/s09.webp (unchanged, keep for Light/lowres)",
+     "feather": 0.04,
+     "auto_thresholds": [
+      0.203,
+      0.531
+     ],
+     "hand_tuned": false,
+     "note": "",
+     "fill_note": "LaMa invented translucent half-figures in the crowd bands; both fills use Telea",
+     "parallax": {
+      "scale": 1.16,
+      "breath_per_layer": [
+       1.0,
+       1.5,
+       2.0
+      ]
+     },
+     "layers": [
+      {
+       "id": "L0",
+       "role": "far",
+       "file": "assets/img/s09_L0.webp",
+       "box": [
+        0,
+        0,
+        1920,
+        1080
+       ],
+       "depth": [
+        0.0,
+        0.203
+       ],
+       "par": 0.35,
+       "fill": "telea"
+      },
+      {
+       "id": "L1",
+       "role": "mid",
+       "file": "assets/img/s09_L1.webp",
+       "box": [
+        0,
+        386,
+        1920,
+        694
+       ],
+       "depth": [
+        0.203,
+        0.531
+       ],
+       "par": 0.62,
+       "fill": "telea"
+      },
+      {
+       "id": "L2",
+       "role": "near",
+       "file": "assets/img/s09_L2.webp",
+       "box": [
+        0,
+        680,
+        1920,
+        400
+       ],
+       "depth": [
+        0.531,
+        1.0
+       ],
+       "par": 0.9,
+       "fill": "none (the painting's own pixels)"
+      }
+     ],
+     "bytes": {
+      "base1920": 51002,
+      "L0": 30864,
+      "L1": 29058,
+      "L2": 35382
+     }
+    },
+    {
+     "name": "s10",
+     "at": 2800,
+     "in_pack": true,
+     "base1920": "assets/img/s10@1920.webp",
+     "base1280": "assets/img/s10.webp (unchanged, keep for Light/lowres)",
+     "feather": 0.04,
+     "auto_thresholds": [
+      0.281,
+      0.625
+     ],
+     "hand_tuned": true,
+     "note": "sun rays stay in the far layer by auto thresholds; crowd is the near band",
+     "fill_note": "LaMa filled under the crowd with a mottled texture with green/red speckle; mid layer uses Telea",
+     "parallax": {
+      "scale": 1.16,
+      "breath_per_layer": [
+       1.0,
+       1.5,
+       2.0
+      ]
+     },
+     "layers": [
+      {
+       "id": "L0",
+       "role": "far",
+       "file": "assets/img/s10_L0.webp",
+       "box": [
+        0,
+        0,
+        1920,
+        1080
+       ],
+       "depth": [
+        0.0,
+        0.281
+       ],
+       "par": 0.35,
+       "fill": "lama"
+      },
+      {
+       "id": "L1",
+       "role": "mid",
+       "file": "assets/img/s10_L1.webp",
+       "box": [
+        0,
+        0,
+        1920,
+        1080
+       ],
+       "depth": [
+        0.281,
+        0.625
+       ],
+       "par": 0.62,
+       "fill": "telea"
+      },
+      {
+       "id": "L2",
+       "role": "near",
+       "file": "assets/img/s10_L2.webp",
+       "box": [
+        0,
+        901,
+        1920,
+        179
+       ],
+       "depth": [
+        0.625,
+        1.0
+       ],
+       "par": 0.9,
+       "fill": "none (the painting's own pixels)"
+      }
+     ],
+     "bytes": {
+      "base1920": 74790,
+      "L0": 53578,
+      "L1": 21068,
+      "L2": 19132
+     }
+    }
+   ]
+  },
+  {
+   "key": "war",
+   "title": "The Frygar Camp",
+   "secret": false,
+   "paintings": [
+    {
+     "name": "s11",
+     "at": 0,
+     "in_pack": true,
+     "base1920": "assets/img/s11@1920.webp",
+     "base1280": "assets/img/s11.webp (unchanged, keep for Light/lowres)",
+     "feather": 0.04,
+     "auto_thresholds": [
+      0.188,
+      0.531
+     ],
+     "hand_tuned": true,
+     "note": "banner poles: thin-feature guard",
+     "fill_note": "",
+     "parallax": {
+      "scale": 1.16,
+      "breath_per_layer": [
+       1.0,
+       1.5,
+       2.0
+      ]
+     },
+     "layers": [
+      {
+       "id": "L0",
+       "role": "far",
+       "file": "assets/img/s11_L0.webp",
+       "box": [
+        0,
+        0,
+        1920,
+        1080
+       ],
+       "depth": [
+        0.0,
+        0.188
+       ],
+       "par": 0.35,
+       "fill": "lama"
+      },
+      {
+       "id": "L1",
+       "role": "mid",
+       "file": "assets/img/s11_L1.webp",
+       "box": [
+        0,
+        30,
+        1920,
+        1050
+       ],
+       "depth": [
+        0.188,
+        0.531
+       ],
+       "par": 0.62,
+       "fill": "lama"
+      },
+      {
+       "id": "L2",
+       "role": "near",
+       "file": "assets/img/s11_L2.webp",
+       "box": [
+        0,
+        729,
+        1920,
+        351
+       ],
+       "depth": [
+        0.531,
+        1.0
+       ],
+       "par": 0.9,
+       "fill": "none (the painting's own pixels)"
+      }
+     ],
+     "bytes": {
+      "base1920": 51404,
+      "L0": 29636,
+      "L1": 53928,
+      "L2": 17766
+     }
+    },
+    {
+     "name": "s12",
+     "at": 1100,
+     "in_pack": true,
+     "base1920": "assets/img/s12@1920.webp",
+     "base1280": "assets/img/s12.webp (unchanged, keep for Light/lowres)",
+     "feather": 0.04,
+     "auto_thresholds": [
+      0.297,
+      0.562
+     ],
+     "hand_tuned": false,
+     "note": "",
+     "fill_note": "",
+     "parallax": {
+      "scale": 1.16,
+      "breath_per_layer": [
+       1.0,
+       1.5,
+       2.0
+      ]
+     },
+     "layers": [
+      {
+       "id": "L0",
+       "role": "far",
+       "file": "assets/img/s12_L0.webp",
+       "box": [
+        0,
+        0,
+        1920,
+        1080
+       ],
+       "depth": [
+        0.0,
+        0.297
+       ],
+       "par": 0.35,
+       "fill": "lama"
+      },
+      {
+       "id": "L1",
+       "role": "mid",
+       "file": "assets/img/s12_L1.webp",
+       "box": [
+        0,
+        0,
+        1920,
+        1080
+       ],
+       "depth": [
+        0.297,
+        0.562
+       ],
+       "par": 0.62,
+       "fill": "lama"
+      },
+      {
+       "id": "L2",
+       "role": "near",
+       "file": "assets/img/s12_L2.webp",
+       "box": [
+        0,
+        0,
+        1920,
+        1080
+       ],
+       "depth": [
+        0.562,
+        1.0
+       ],
+       "par": 0.9,
+       "fill": "none (the painting's own pixels)"
+      }
+     ],
+     "bytes": {
+      "base1920": 40066,
+      "L0": 26216,
+      "L1": 33996,
+      "L2": 25488
+     }
+    },
+    {
+     "name": "s13",
+     "at": 2200,
+     "in_pack": true,
+     "base1920": "assets/img/s13@1920.webp",
+     "base1280": "assets/img/s13.webp (unchanged, keep for Light/lowres)",
+     "feather": 0.03,
+     "auto_thresholds": [
+      0.312,
+      0.547
+     ],
+     "hand_tuned": true,
+     "note": "raised sword kept whole with the figure; rays behind stay far",
+     "fill_note": "",
+     "parallax": {
+      "scale": 1.16,
+      "breath_per_layer": [
+       1.0,
+       1.5,
+       2.0
+      ]
+     },
+     "layers": [
+      {
+       "id": "L0",
+       "role": "far",
+       "file": "assets/img/s13_L0.webp",
+       "box": [
+        0,
+        0,
+        1920,
+        1080
+       ],
+       "depth": [
+        0.0,
+        0.3
+       ],
+       "par": 0.35,
+       "fill": "lama"
+      },
+      {
+       "id": "L1",
+       "role": "mid",
+       "file": "assets/img/s13_L1.webp",
+       "box": [
+        0,
+        0,
+        1920,
+        1080
+       ],
+       "depth": [
+        0.3,
+        0.43
+       ],
+       "par": 0.62,
+       "fill": "lama"
+      },
+      {
+       "id": "L2",
+       "role": "near",
+       "file": "assets/img/s13_L2.webp",
+       "box": [
+        0,
+        0,
+        1920,
+        1080
+       ],
+       "depth": [
+        0.43,
+        1.0
+       ],
+       "par": 0.8,
+       "fill": "none (the painting's own pixels)"
+      }
+     ],
+     "bytes": {
+      "base1920": 36192,
+      "L0": 21738,
+      "L1": 38662,
+      "L2": 42148
+     }
+    },
+    {
+     "name": "s14",
+     "at": 3200,
+     "in_pack": true,
+     "base1920": "assets/img/s14@1920.webp",
+     "base1280": "assets/img/s14.webp (unchanged, keep for Light/lowres)",
+     "feather": 0.04,
+     "auto_thresholds": [
+      0.234,
+      0.516
+     ],
+     "hand_tuned": false,
+     "note": "",
+     "fill_note": "LaMa repeated the near spear as a second spear; mid layer uses Telea",
+     "parallax": {
+      "scale": 1.16,
+      "breath_per_layer": [
+       1.0,
+       1.5,
+       2.0
+      ]
+     },
+     "layers": [
+      {
+       "id": "L0",
+       "role": "far",
+       "file": "assets/img/s14_L0.webp",
+       "box": [
+        0,
+        0,
+        1920,
+        1080
+       ],
+       "depth": [
+        0.0,
+        0.234
+       ],
+       "par": 0.35,
+       "fill": "lama"
+      },
+      {
+       "id": "L1",
+       "role": "mid",
+       "file": "assets/img/s14_L1.webp",
+       "box": [
+        0,
+        0,
+        1920,
+        1080
+       ],
+       "depth": [
+        0.234,
+        0.516
+       ],
+       "par": 0.62,
+       "fill": "telea"
+      },
+      {
+       "id": "L2",
+       "role": "near",
+       "file": "assets/img/s14_L2.webp",
+       "box": [
+        0,
+        391,
+        1920,
+        689
+       ],
+       "depth": [
+        0.516,
+        1.0
+       ],
+       "par": 0.9,
+       "fill": "none (the painting's own pixels)"
+      }
+     ],
+     "bytes": {
+      "base1920": 31044,
+      "L0": 18842,
+      "L1": 33778,
+      "L2": 25290
+     }
+    }
+   ]
+  },
+  {
+   "key": "dark",
+   "title": "Where the Old Things Watch",
+   "secret": false,
+   "paintings": [
+    {
+     "name": "s15",
+     "at": 0,
+     "in_pack": true,
+     "base1920": "assets/img/s15@1920.webp",
+     "base1280": "assets/img/s15.webp (unchanged, keep for Light/lowres)",
+     "feather": 0.04,
+     "auto_thresholds": [
+      0.312,
+      0.594
+     ],
+     "hand_tuned": true,
+     "note": "both standing figures and the antler branches kept whole in the near layer (auto cut the second figure and the antler tips)",
+     "fill_note": "",
+     "parallax": {
+      "scale": 1.16,
+      "breath_per_layer": [
+       1.0,
+       1.5,
+       2.0
+      ]
+     },
+     "layers": [
+      {
+       "id": "L0",
+       "role": "far",
+       "file": "assets/img/s15_L0.webp",
+       "box": [
+        0,
+        0,
+        1920,
+        1080
+       ],
+       "depth": [
+        0.0,
+        0.25
+       ],
+       "par": 0.35,
+       "fill": "lama"
+      },
+      {
+       "id": "L1",
+       "role": "mid",
+       "file": "assets/img/s15_L1.webp",
+       "box": [
+        0,
+        0,
+        1920,
+        1080
+       ],
+       "depth": [
+        0.25,
+        0.45
+       ],
+       "par": 0.62,
+       "fill": "lama"
+      },
+      {
+       "id": "L2",
+       "role": "near",
+       "file": "assets/img/s15_L2.webp",
+       "box": [
+        0,
+        0,
+        1920,
+        1080
+       ],
+       "depth": [
+        0.45,
+        1.0
+       ],
+       "par": 0.9,
+       "fill": "none (the painting's own pixels)"
+      }
+     ],
+     "bytes": {
+      "base1920": 34076,
+      "L0": 17032,
+      "L1": 42108,
+      "L2": 45574
+     }
+    },
+    {
+     "name": "s16",
+     "at": 2200,
+     "in_pack": true,
+     "base1920": "assets/img/s16@1920.webp",
+     "base1280": "assets/img/s16.webp (unchanged, keep for Light/lowres)",
+     "feather": 0.04,
+     "auto_thresholds": [
+      0.219,
+      0.5
+     ],
+     "hand_tuned": false,
+     "note": "",
+     "fill_note": "",
+     "parallax": {
+      "scale": 1.16,
+      "breath_per_layer": [
+       1.0,
+       1.5,
+       2.0
+      ]
+     },
+     "layers": [
+      {
+       "id": "L0",
+       "role": "far",
+       "file": "assets/img/s16_L0.webp",
+       "box": [
+        0,
+        0,
+        1920,
+        1080
+       ],
+       "depth": [
+        0.0,
+        0.219
+       ],
+       "par": 0.35,
+       "fill": "lama"
+      },
+      {
+       "id": "L1",
+       "role": "mid",
+       "file": "assets/img/s16_L1.webp",
+       "box": [
+        0,
+        0,
+        1920,
+        1080
+       ],
+       "depth": [
+        0.219,
+        0.5
+       ],
+       "par": 0.62,
+       "fill": "lama"
+      },
+      {
+       "id": "L2",
+       "role": "near",
+       "file": "assets/img/s16_L2.webp",
+       "box": [
+        0,
+        207,
+        1920,
+        873
+       ],
+       "depth": [
+        0.5,
+        1.0
+       ],
+       "par": 0.9,
+       "fill": "none (the painting's own pixels)"
+      }
+     ],
+     "bytes": {
+      "base1920": 28430,
+      "L0": 16778,
+      "L1": 39408,
+      "L2": 31410
+     }
+    }
+   ]
+  },
+  {
+   "key": "heart",
+   "title": "The Heart of Fantor",
+   "secret": false,
+   "paintings": [
+    {
+     "name": "s17",
+     "at": 0,
+     "in_pack": true,
+     "base1920": "assets/img/s17@1920.webp",
+     "base1280": "assets/img/s17.webp (unchanged, keep for Light/lowres)",
+     "feather": 0.05,
+     "auto_thresholds": [
+      0.391,
+      0.703
+     ],
+     "hand_tuned": true,
+     "note": "radiating rays kept entirely in the far layer (auto cut through them); only the crystal is near",
+     "fill_note": "",
+     "parallax": {
+      "scale": 1.16,
+      "breath_per_layer": [
+       1.0,
+       1.5,
+       2.0
+      ]
+     },
+     "layers": [
+      {
+       "id": "L0",
+       "role": "far",
+       "file": "assets/img/s17_L0.webp",
+       "box": [
+        0,
+        0,
+        1920,
+        1080
+       ],
+       "depth": [
+        0.0,
+        0.8
+       ],
+       "par": 0.35,
+       "fill": "lama"
+      },
+      {
+       "id": "L2",
+       "role": "near",
+       "file": "assets/img/s17_L2.webp",
+       "box": [
+        689,
+        233,
+        1231,
+        847
+       ],
+       "depth": [
+        0.8,
+        1.0
+       ],
+       "par": 0.8,
+       "fill": "none (the painting's own pixels)"
+      }
+     ],
+     "bytes": {
+      "base1920": 57220,
+      "L0": 36630,
+      "L2": 28882
+     }
+    },
+    {
+     "name": "s18",
+     "at": 1300,
+     "in_pack": true,
+     "base1920": "assets/img/s18@1920.webp",
+     "base1280": "assets/img/s18.webp (unchanged, keep for Light/lowres)",
+     "feather": 0.03,
+     "auto_thresholds": [
+      0.359,
+      0.672
+     ],
+     "hand_tuned": true,
+     "note": "arch and pillars near; portal, figures and light rays far, so the rays are never cut",
+     "fill_note": "",
+     "parallax": {
+      "scale": 1.16,
+      "breath_per_layer": [
+       1.0,
+       1.5,
+       2.0
+      ]
+     },
+     "layers": [
+      {
+       "id": "L0",
+       "role": "far",
+       "file": "assets/img/s18_L0.webp",
+       "box": [
+        0,
+        0,
+        1920,
+        1080
+       ],
+       "depth": [
+        0.0,
+        0.56
+       ],
+       "par": 0.35,
+       "fill": "lama"
+      },
+      {
+       "id": "L2",
+       "role": "near",
+       "file": "assets/img/s18_L2.webp",
+       "box": [
+        0,
+        0,
+        1920,
+        1080
+       ],
+       "depth": [
+        0.56,
+        1.0
+       ],
+       "par": 0.7,
+       "fill": "none (the painting's own pixels)"
+      }
+     ],
+     "bytes": {
+      "base1920": 52992,
+      "L0": 35756,
+      "L2": 43330
+     }
+    },
+    {
+     "name": "s19",
+     "at": 2300,
+     "in_pack": true,
+     "base1920": "assets/img/s19@1920.webp",
+     "base1280": "assets/img/s19.webp (unchanged, keep for Light/lowres)",
+     "feather": 0.04,
+     "auto_thresholds": [
+      0.297,
+      0.672
+     ],
+     "hand_tuned": false,
+     "note": "",
+     "fill_note": "",
+     "parallax": {
+      "scale": 1.16,
+      "breath_per_layer": [
+       1.0,
+       1.5,
+       2.0
+      ]
+     },
+     "layers": [
+      {
+       "id": "L0",
+       "role": "far",
+       "file": "assets/img/s19_L0.webp",
+       "box": [
+        0,
+        0,
+        1920,
+        1080
+       ],
+       "depth": [
+        0.0,
+        0.297
+       ],
+       "par": 0.35,
+       "fill": "lama"
+      },
+      {
+       "id": "L1",
+       "role": "mid",
+       "file": "assets/img/s19_L1.webp",
+       "box": [
+        0,
+        45,
+        1920,
+        1035
+       ],
+       "depth": [
+        0.297,
+        0.672
+       ],
+       "par": 0.62,
+       "fill": "lama"
+      },
+      {
+       "id": "L2",
+       "role": "near",
+       "file": "assets/img/s19_L2.webp",
+       "box": [
+        0,
+        76,
+        1920,
+        1004
+       ],
+       "depth": [
+        0.672,
+        1.0
+       ],
+       "par": 0.8,
+       "fill": "none (the painting's own pixels)"
+      }
+     ],
+     "bytes": {
+      "base1920": 28334,
+      "L0": 14300,
+      "L1": 33556,
+      "L2": 35864
+     }
+    }
+   ]
+  },
+  {
+   "key": "garden",
+   "title": "Dusk",
+   "secret": false,
+   "paintings": [
+    {
+     "name": "s22",
+     "at": 0,
+     "in_pack": true,
+     "base1920": "assets/img/s22@1920.webp",
+     "base1280": "assets/img/s22.webp (unchanged, keep for Light/lowres)",
+     "feather": 0.04,
+     "auto_thresholds": [
+      0.219,
+      0.562
+     ],
+     "hand_tuned": false,
+     "note": "",
+     "fill_note": "",
+     "parallax": {
+      "scale": 1.16,
+      "breath_per_layer": [
+       1.0,
+       1.5,
+       2.0
+      ]
+     },
+     "layers": [
+      {
+       "id": "L0",
+       "role": "far",
+       "file": "assets/img/s22_L0.webp",
+       "box": [
+        0,
+        0,
+        1920,
+        1080
+       ],
+       "depth": [
+        0.0,
+        0.219
+       ],
+       "par": 0.35,
+       "fill": "lama"
+      },
+      {
+       "id": "L1",
+       "role": "mid",
+       "file": "assets/img/s22_L1.webp",
+       "box": [
+        0,
+        0,
+        1920,
+        1080
+       ],
+       "depth": [
+        0.219,
+        0.562
+       ],
+       "par": 0.62,
+       "fill": "lama"
+      },
+      {
+       "id": "L2",
+       "role": "near",
+       "file": "assets/img/s22_L2.webp",
+       "box": [
+        0,
+        66,
+        1920,
+        1014
+       ],
+       "depth": [
+        0.562,
+        1.0
+       ],
+       "par": 0.9,
+       "fill": "none (the painting's own pixels)"
+      }
+     ],
+     "bytes": {
+      "base1920": 35804,
+      "L0": 21552,
+      "L1": 38068,
+      "L2": 30334
+     }
+    },
+    {
+     "name": "s23",
+     "at": 1500,
+     "in_pack": true,
+     "base1920": "assets/img/s23@1920.webp",
+     "base1280": "assets/img/s23.webp (unchanged, keep for Light/lowres)",
+     "feather": 0.08,
+     "auto_thresholds": [
+      0.188,
+      0.609
+     ],
+     "hand_tuned": true,
+     "note": "pier and nearest water near; sea and the sun's reflection far, wide feather so the reflection does not tear",
+     "fill_note": "",
+     "parallax": {
+      "scale": 1.16,
+      "breath_per_layer": [
+       1.0,
+       1.5,
+       2.0
+      ]
+     },
+     "layers": [
+      {
+       "id": "L0",
+       "role": "far",
+       "file": "assets/img/s23_L0.webp",
+       "box": [
+        0,
+        0,
+        1920,
+        1080
+       ],
+       "depth": [
+        0.0,
+        0.8
+       ],
+       "par": 0.35,
+       "fill": "lama"
+      },
+      {
+       "id": "L2",
+       "role": "near",
+       "file": "assets/img/s23_L2.webp",
+       "box": [
+        705,
+        676,
+        1215,
+        404
+       ],
+       "depth": [
+        0.8,
+        1.0
+       ],
+       "par": 0.8,
+       "fill": "none (the painting's own pixels)"
+      }
+     ],
+     "bytes": {
+      "base1920": 43996,
+      "L0": 30250,
+      "L2": 18060
+     }
+    }
+   ]
+  },
+  {
+   "key": "sec1",
+   "title": "Beneath the Pool",
+   "secret": true,
+   "paintings": [
+    {
+     "name": "x1",
+     "at": 0,
+     "in_pack": false,
+     "why": "no 1920 master on the box (x-series came from elsewhere); keep today's 1280 file and bands"
+    }
+   ]
+  },
+  {
+   "key": "sec2",
+   "title": "Above the Bent Wood",
+   "secret": true,
+   "paintings": [
+    {
+     "name": "x2",
+     "at": 0,
+     "in_pack": false,
+     "why": "no 1920 master on the box (x-series came from elsewhere); keep today's 1280 file and bands"
+    }
+   ]
+  },
+  {
+   "key": "sec3",
+   "title": "What the River Remembers",
+   "secret": true,
+   "paintings": [
+    {
+     "name": "x3",
+     "at": 0,
+     "in_pack": false,
+     "why": "no 1920 master on the box (x-series came from elsewhere); keep today's 1280 file and bands"
+    }
+   ]
+  },
+  {
+   "key": "sec4",
+   "title": "The Lantern Above the City",
+   "secret": true,
+   "paintings": [
+    {
+     "name": "x5",
+     "at": 0,
+     "in_pack": false,
+     "why": "no 1920 master on the box (x-series came from elsewhere); keep today's 1280 file and bands"
+    }
+   ]
+  },
+  {
+   "key": "sec5",
+   "title": "Over the Frygar Wall",
+   "secret": true,
+   "paintings": [
+    {
+     "name": "x6",
+     "at": 0,
+     "in_pack": false,
+     "why": "no 1920 master on the box (x-series came from elsewhere); keep today's 1280 file and bands"
+    }
+   ]
+  },
+  {
+   "key": "sec6",
+   "title": "Where the Old Thing Sleeps",
+   "secret": true,
+   "paintings": [
+    {
+     "name": "x7",
+     "at": 0,
+     "in_pack": false,
+     "why": "no 1920 master on the box (x-series came from elsewhere); keep today's 1280 file and bands"
+    }
+   ]
+  },
+  {
+   "key": "sec7",
+   "title": "The Bell Beneath the Throne",
+   "secret": true,
+   "paintings": [
+    {
+     "name": "x8",
+     "at": 0,
+     "in_pack": false,
+     "why": "no 1920 master on the box (x-series came from elsewhere); keep today's 1280 file and bands"
+    }
+   ]
+  },
+  {
+   "key": "nsec1",
+   "title": "Inside the Hollow Rock",
+   "secret": true,
+   "paintings": [
+    {
+     "name": "s02",
+     "at": 0,
+     "in_pack": true,
+     "base1920": "assets/img/s02@1920.webp",
+     "base1280": "assets/img/s02.webp (unchanged, keep for Light/lowres)",
+     "feather": 0.04,
+     "auto_thresholds": [
+      0.391,
+      0.828
+     ],
+     "hand_tuned": true,
+     "note": "hood and glowing face kept as one figure (auto split the face from the hood)",
+     "fill_note": "",
+     "parallax": {
+      "scale": 1.16,
+      "breath_per_layer": [
+       1.0,
+       1.5,
+       2.0
+      ]
+     },
+     "layers": [
+      {
+       "id": "L0",
+       "role": "far",
+       "file": "assets/img/s02_L0.webp",
+       "box": [
+        0,
+        0,
+        1920,
+        1080
+       ],
+       "depth": [
+        0.0,
+        0.55
+       ],
+       "par": 0.35,
+       "fill": "lama"
+      },
+      {
+       "id": "L2",
+       "role": "near",
+       "file": "assets/img/s02_L2.webp",
+       "box": [
+        27,
+        0,
+        1893,
+        1080
+       ],
+       "depth": [
+        0.55,
+        1.0
+       ],
+       "par": 0.7,
+       "fill": "none (the painting's own pixels)"
+      }
+     ],
+     "bytes": {
+      "base1920": 34148,
+      "L0": 22686,
+      "L2": 33188
+     }
+    }
+   ]
+  },
+  {
+   "key": "nsec2",
+   "title": "Under the Rotten Bough",
+   "secret": true,
+   "paintings": [
+    {
+     "name": "s05",
+     "at": 0,
+     "in_pack": true,
+     "base1920": "assets/img/s05@1920.webp",
+     "base1280": "assets/img/s05.webp (unchanged, keep for Light/lowres)",
+     "feather": 0.04,
+     "auto_thresholds": [
+      0.266,
+      0.578
+     ],
+     "hand_tuned": false,
+     "note": "",
+     "fill_note": "LaMa drew a ghost of the small figure above it on the path; far layer uses Telea",
+     "parallax": {
+      "scale": 1.16,
+      "breath_per_layer": [
+       1.0,
+       1.5,
+       2.0
+      ]
+     },
+     "layers": [
+      {
+       "id": "L0",
+       "role": "far",
+       "file": "assets/img/s05_L0.webp",
+       "box": [
+        0,
+        0,
+        1920,
+        1080
+       ],
+       "depth": [
+        0.0,
+        0.266
+       ],
+       "par": 0.35,
+       "fill": "telea"
+      },
+      {
+       "id": "L1",
+       "role": "mid",
+       "file": "assets/img/s05_L1.webp",
+       "box": [
+        0,
+        0,
+        1920,
+        1080
+       ],
+       "depth": [
+        0.266,
+        0.578
+       ],
+       "par": 0.62,
+       "fill": "lama"
+      },
+      {
+       "id": "L2",
+       "role": "near",
+       "file": "assets/img/s05_L2.webp",
+       "box": [
+        0,
+        635,
+        1920,
+        445
+       ],
+       "depth": [
+        0.578,
+        1.0
+       ],
+       "par": 0.9,
+       "fill": "none (the painting's own pixels)"
+      }
+     ],
+     "bytes": {
+      "base1920": 41084,
+      "L0": 24202,
+      "L1": 35356,
+      "L2": 17570
+     }
+    }
+   ]
+  },
+  {
+   "key": "nsec3",
+   "title": "The Moon's Road",
+   "secret": true,
+   "paintings": [
+    {
+     "name": "s07",
+     "at": 0,
+     "in_pack": true,
+     "base1920": "assets/img/s07@1920.webp",
+     "base1280": "assets/img/s07.webp (unchanged, keep for Light/lowres)",
+     "feather": 0.04,
+     "auto_thresholds": [
+      0.141,
+      0.438
+     ],
+     "hand_tuned": false,
+     "note": "",
+     "fill_note": "",
+     "parallax": {
+      "scale": 1.16,
+      "breath_per_layer": [
+       1.0,
+       1.5,
+       2.0
+      ]
+     },
+     "layers": [
+      {
+       "id": "L0",
+       "role": "far",
+       "file": "assets/img/s07_L0.webp",
+       "box": [
+        0,
+        0,
+        1920,
+        1080
+       ],
+       "depth": [
+        0.0,
+        0.141
+       ],
+       "par": 0.35,
+       "fill": "lama"
+      },
+      {
+       "id": "L1",
+       "role": "mid",
+       "file": "assets/img/s07_L1.webp",
+       "box": [
+        0,
+        0,
+        1920,
+        1080
+       ],
+       "depth": [
+        0.141,
+        0.438
+       ],
+       "par": 0.62,
+       "fill": "lama"
+      },
+      {
+       "id": "L2",
+       "role": "near",
+       "file": "assets/img/s07_L2.webp",
+       "box": [
+        65,
+        304,
+        1855,
+        776
+       ],
+       "depth": [
+        0.438,
+        1.0
+       ],
+       "par": 0.9,
+       "fill": "none (the painting's own pixels)"
+      }
+     ],
+     "bytes": {
+      "base1920": 34408,
+      "L0": 21104,
+      "L1": 30780,
+      "L2": 27896
+     }
+    }
+   ]
+  }
+ ],
+ "totals_bytes": {
+  "base1920": 858264,
+  "layers": 1707994,
+  "paintings": 21
+ },
+ "not_in_pack": "x1-x3, x5-x8 (secret-land backdrops) and x4 (ending) have no 1920 master on the box; s20/s21 are the throne cinematic, not a land backdrop. Keep their current files and drawing."
+}

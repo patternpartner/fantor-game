@@ -1,4 +1,4 @@
-FANTOR - The Wanderer's Light (v11.4)
+FANTOR - The Wanderer's Light (v12.0)
 A punishing old-school platformer set in the world of "The Road to Fantor". Every backdrop and
 character comes from Eh AyeC's "Fantor's Long War" collection: AI-generated images, created and
 curated by the artist (see CHARACTERS.md). The code was written with an AI coding assistant.
@@ -37,7 +37,7 @@ CONTROLS
   Mouse:    click the game first so it gets the keyboard (in an embed).
             The two small buttons at the top are Menu and Fullscreen.
   Phone (landscape): the on-screen buttons.
-  The pause menu has Music, Voice and Effects volume, a Timer switch, and Graphics (Auto, Full, or Light for slow machines). Settings and best times
+  The pause menu has Music, Voice and Effects volume, a Timer switch, Graphics (Auto, Full, or Light for slow machines) and Depth (Layers, or Off for the older flat paintings). Settings and best times
   are remembered in this browser (if the browser allows storage; if not, the game still runs).
 
 LIVES (old school, no mercy)
@@ -97,6 +97,15 @@ KEEP THIS CARD
   journeys, furthest, where the light has gone out, and a small honest credit. On a phone the line says to tap it.
   The walking buttons step aside on those screens so the tap can land. If your browser or the embed does not
   allow the download, press G (or tap) again within a few seconds and it opens in a new tab instead.
+
+v12.0 "Clean canvas":
+  - The paintings are cut into depth layers, so the near shore, the crowd and the cloak move against
+    the sky as you walk. One scale, no doubled edges. x1 to x8 keep the old drawing.
+  - On a large or sharp screen the lands use the 1920 paintings. Light, and ?lowres, keep the 1280 files.
+  - The counters, subtitles and cards are drawn after the bloom, on their own layer, so the text stays sharp.
+  - The camera moves in device pixels and keeps up with the screen's refresh. A hit shakes smoothly.
+  - Nothing about the journey changed: the same physics, the same hits, the same lives, the same restarts.
+  - Graphics still offers Auto, Full and Light. Depth can be Layers or Off.
 
 v11.4:
   - A second ending in the same sitting no longer freezes at the throne or the bench. The story and

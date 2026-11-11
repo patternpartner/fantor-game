@@ -1,0 +1,99 @@
+{
+ "_default": {
+  "feather": 0.04,
+  "edge_px": 2.0,
+  "hole_grow": 31,
+  "thin": 0,
+  "layers": 3,
+  "q": {
+   "base": 80,
+   "far": 60,
+   "L1": 62,
+   "L2": 70
+  },
+  "band": 170
+ },
+ "s01": {},
+ "s02": {
+  "layers": 2,
+  "t_near": 0.55,
+  "note": "hood and glowing face kept as one figure (auto split the face from the hood)"
+ },
+ "s03": {},
+ "s04": {
+  "layers": 2,
+  "t_near": 0.3,
+  "note": "giant's feet and the ground they stand on kept in one layer, so the feet never slide on the sand"
+ },
+ "s05": {
+  "fill": {
+   "L0": "telea"
+  },
+  "fill_note": "LaMa drew a ghost of the small figure above it on the path; far layer uses Telea"
+ },
+ "s06": {},
+ "s07": {},
+ "s08": {
+  "thin": 5,
+  "note": "tower spire: thin-feature guard"
+ },
+ "s09": {
+  "fill": {
+   "L0": "telea",
+   "L1": "telea"
+  },
+  "fill_note": "LaMa invented translucent half-figures in the crowd bands; both fills use Telea"
+ },
+ "s10": {
+  "note": "sun rays stay in the far layer by auto thresholds; crowd is the near band",
+  "fill": {
+   "L1": "telea"
+  },
+  "fill_note": "LaMa filled under the crowd with a mottled texture with green/red speckle; mid layer uses Telea"
+ },
+ "s11": {
+  "thin": 5,
+  "note": "banner poles: thin-feature guard"
+ },
+ "s12": {},
+ "s13": {
+  "t_mid": 0.3,
+  "t_near": 0.43,
+  "feather": 0.03,
+  "thin": 5,
+  "note": "raised sword kept whole with the figure; rays behind stay far"
+ },
+ "s14": {
+  "fill": {
+   "L1": "telea"
+  },
+  "fill_note": "LaMa repeated the near spear as a second spear; mid layer uses Telea"
+ },
+ "s15": {
+  "t_mid": 0.25,
+  "t_near": 0.45,
+  "thin": 7,
+  "note": "both standing figures and the antler branches kept whole in the near layer (auto cut the second figure and the antler tips)"
+ },
+ "s16": {},
+ "s17": {
+  "layers": 2,
+  "t_near": 0.8,
+  "feather": 0.05,
+  "note": "radiating rays kept entirely in the far layer (auto cut through them); only the crystal is near"
+ },
+ "s18": {
+  "layers": 2,
+  "t_near": 0.56,
+  "feather": 0.03,
+  "note": "arch and pillars near; portal, figures and light rays far, so the rays are never cut"
+ },
+ "s19": {},
+ "s22": {},
+ "s23": {
+  "layers": 2,
+  "t_near": 0.8,
+  "feather": 0.08,
+  "note": "pier and nearest water near; sea and the sun's reflection far, wide feather so the reflection does not tear"
+ }
+}

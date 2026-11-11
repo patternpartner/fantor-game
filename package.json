@@ -4,7 +4,7 @@
   "description": "Fantor: The Wanderer's Light. Source is src/game.js; node tools/build.js writes game.js.",
   "scripts": {
     "build": "node tools/build.js",
-    "test": "node test/feedback.test.js"
+    "test": "node test/feedback.test.js && node test/readability.test.js"
   },
   "devDependencies": {
     "puppeteer-core": "^23.11.1",
