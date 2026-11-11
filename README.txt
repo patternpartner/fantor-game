@@ -1,4 +1,4 @@
-FANTOR - The Wanderer's Light (v11.2)
+FANTOR - The Wanderer's Light (v11.3)
 A punishing old-school platformer set in the world of "The Road to Fantor". Every backdrop and
 character comes from Eh AyeC's "Fantor's Long War" collection: AI-generated images, created and
 curated by the artist (see CHARACTERS.md). The code was written with an AI coding assistant.
@@ -97,6 +97,19 @@ KEEP THIS CARD
   journeys, furthest, where the light has gone out, and a small honest credit. On a phone the line says to tap it.
   The walking buttons step aside on those screens so the tap can land. If your browser or the embed does not
   allow the download, press G (or tap) again within a few seconds and it opens in a new tab instead.
+
+v11.3:
+  - Subtitles lift above the ledge whenever a pit or a hazard is in that band, in every land, so the box
+    does not cover the water or the edge.
+  - Gruff speaks when you reach him. The lives hint is allowed to finish; the jump hint waits for it.
+  - Walking into a rock or a block plays a small bump and a brief push.
+  - Narration already heard this sitting is not played again. The game-over screen accepts a key after
+    1 second, and the land title card is shorter on a retry. Lives, restart points and motes on a death
+    are unchanged.
+  - The first time your light changes, a short legend names the stars (a shine left) and the seeds
+    (light toward the next). The stone shows "stone  3 / 16  light": the light you are carrying, and
+    the light it wants.
+  - Clicking itch.io's own fullscreen control no longer leaves the pause menu open. Leaving the tab still pauses.
 
 v11.2:
   - Crouch: hold Down or S (⌄ on a phone, above the walk buttons). Behind a tall rock it catches
