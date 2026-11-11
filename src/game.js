@@ -1,4 +1,4 @@
-/* FANTOR · The Wanderer's Light  (v11.2)
+/* FANTOR · The Wanderer's Light  (v11.3)
    A small side-scrolling journey through the AI-generated art of "The Road to Fantor",
    with characters cut from Eh AyeC's Fantor collections on Fine Art America.
    Plain canvas + WebAudio, no dependencies.
@@ -24,7 +24,7 @@ function fit(){const vw=Math.max(1,innerWidth), vh=Math.max(1,innerHeight), s=Ma
   cv.style.width=Math.floor(W*s)+'px'; cv.style.height=Math.floor(H*s)+'px';
   const want=s*(window.devicePixelRatio||1); const rs=Q.has('lowres')?1:want>1.75?2:want>1.2?1.5:1;
   if(rs!==RS||cv.width!==Math.round(W*rs)){ RS=rs; cv.width=Math.round(W*RS); cv.height=Math.round(H*RS); }}
-addEventListener('resize',fit); fit();
+addEventListener('resize',()=>{ fit(); noteLayout(); }); fit();
 function base(){ cx.setTransform(RS,0,0,RS,0,0); }
 
 /* ---------------- text ---------------- */
@@ -258,6 +258,7 @@ const sfx={
   crack(){ noise(0.35,1800,300,0.12,1.5); tone(90,0.3,'sine',0.1); },
   thump(){ noise(0.4,200,900,0.12,1.0); tone(70,0.4,'sine',0.14); },
   growl(){ noise(1.1,90,220,0.12,2.5); tone(49,1.1,'sawtooth',0.04); },
+  bump(){ noise(0.07,480,160,0.055,1.6); tone(78,0.08,'sine',0.05); }, // v11.3: a small knock when you walk into a rock
   gain(){ [293.7,440,587.3,740,880].forEach((f,i)=>tone(f,2.2,'sine',0.06,i*0.16)); },
   release(){ for(let i=0;i<14;i++) tone(PENTA[i%PENTA.length]*(i>8?2:1),2.2,'sine',0.05,i*0.11,(Math.random()-.5)); noise(5,120,5000,0.12,0.5); },
 };
@@ -307,7 +308,13 @@ addEventListener('keydown',e=>{
   if(e.code==='KeyG'&&!e.repeat&&(game.state==='end'||game.state==='gameover')){ e.preventDefault(); saveCard(); return; } // v11: in the key event itself, so the download is allowed
   const k=KEYMAP[e.code]; audioInit(); if(NOSCROLL.has(e.code)) e.preventDefault(); if(UPK.has(e.code)) keys.u=true; if(k){ if(!keys[k]) pressed[k]=true; keys[k]=true; e.preventDefault(); } },{capture:true});
 addEventListener('keyup',e=>{ if(UPK.has(e.code)) keys.u=false; const k=KEYMAP[e.code]; if(k){ keys[k]=false; if(!menuOpen) e.preventDefault(); } });
-addEventListener('blur',()=>{ for(const k in keys) keys[k]=false; if(game.state==='play'&&!AUTO&&!Q.has('rec')&&!menuOpen) toggleMenu(true); });
+// v11.3: itch's fullscreen button sits outside the frame, so the click blurs the game and this pause opens.
+// A fullscreen or resize that follows within 600ms is that button, not a tab switch: close the pause again.
+let blurPauseAt=0;
+function noteLayout(){
+  if(blurPauseAt && performance.now()-blurPauseAt<600 && menuOpen){ blurPauseAt=0; toggleMenu(false); }
+}
+addEventListener('blur',()=>{ for(const k in keys) keys[k]=false; if(game.state==='play'&&!AUTO&&!Q.has('rec')&&!menuOpen){ blurPauseAt=performance.now(); toggleMenu(true); } });
 // itch.io runs the game in an iframe: take keyboard focus when clicked
 try{ cv.tabIndex=0; window.focus(); cv.focus({preventScroll:true}); }catch(_){}
 addEventListener('pointerdown',e=>{ if(!menuOpen) try{ cv.focus({preventScroll:true}); }catch(_){} });
@@ -335,14 +342,14 @@ $('b_fs').addEventListener('click',e=>{ e.stopPropagation(); toggleFullscreen();
 for(const id of ['b_menu','b_fs']) $(id).addEventListener('pointerdown',e=>e.stopPropagation());
 if(!fsOK){ $('b_fs').style.display='none'; $('m_fs').style.display='none'; }
 if(Q.has('rec')||Q.has('clean')) document.body.classList.add('clean');
-document.addEventListener('fullscreenchange',fit); document.addEventListener('webkitfullscreenchange',fit);
+document.addEventListener('fullscreenchange',()=>{ fit(); noteLayout(); }); document.addEventListener('webkitfullscreenchange',()=>{ fit(); noteLayout(); });
 const touchEl=document.getElementById('touch');
 let touchMode=false;
 function bindBtn(id,k){ const el=document.getElementById(id); const ids=new Set();
   const dn=e=>{ e.preventDefault(); audioInit(); ids.add(e.pointerId); if(!keys[k]) pressed[k]=true; keys[k]=true; el.classList.add('down'); try{el.setPointerCapture(e.pointerId);}catch(_){} };
   const up=e=>{ ids.delete(e.pointerId); if(!ids.size){ keys[k]=false; el.classList.remove('down'); } };
   el.addEventListener('pointerdown',dn); el.addEventListener('pointerup',up); el.addEventListener('pointercancel',up); el.addEventListener('lostpointercapture',up); }
-bindBtn('bl','l'); bindBtn('br','r'); bindBtn('bj','j'); bindBtn('bs','s'); bindBtn('bu','c'); bindBtn('bd','d'); bindBtn('bc','d'); // v11.2: crouch is Down, on its own button so it is there before the stone-moves appear
+bindBtn('bl','l'); bindBtn('br','r'); bindBtn('bj','j'); bindBtn('bs','s'); bindBtn('bu','c'); bindBtn('bd','d'); bindBtn('bc','d'); // v11.3: crouch is Down, on its own button so it is there before the stone-moves appear
 // v5: the move buttons only appear once a stone has given the move
 let touchMoves=-1; function touchButtons(){ const m=game.moves|0; if(m===touchMoves) return; touchMoves=m; $('bu').style.display=m>=1?'flex':'none'; $('bd').style.display=m>=5?'flex':'none'; }
 // on-screen buttons only while playing: on the end card they covered the existing "keep this card" tap
@@ -428,11 +435,11 @@ const AREAS=[
   plats:[Object.assign(ferry(1990,2230,80,6),{mx:80})], // v9: the log carries you 20 px nearer the far bank (most human-model falls on the shore were just short of it)
   motes:[...row(300,3,40,24),...arc(560,3,50,30,70),[788,62],[812,62], /* v9: the first pit's motes sit over its middle, so they ask for a jump from the edge */...row(1000,3,45,24),...arc(1250,3,40,70,100),...row(1700,3,40,24),...row(2280,3,40,24),[1584,4,'s1'],[1596,-26,'s1'],[1607,-60,'s1k']],
   enemies:[{t:'wisp',x:965},{t:'walker',spr:'gorit',x:1110,r:95,h:74},{t:'flyer',spr:'honey',x:1780,r:150}], // v9: Act 1 brings one new thing at a time (a wisp, then a Gorit, then Hey Honey); Act 2 puts them together
-  folk:[{x:250,spr:'gruff',h:86,lift:26,line:'n01',name:'Gruff'}],
+  folk:[{x:250,spr:'gruff',h:86,lift:26,line:'n01',name:'Gruff',reach:52}], // v11.3: his line waits until you stand by him
   boss:{key:'smonster',spr:'smonster',name:'The Smonster',a0:2330,a1:2760,x:2620,hp:5,h:150,spd:34,move:2.4,atks:['arc','charge'],p2:['arc','tide','charge'],n:3,line:'b01'},
   shrine:{x:2850,need:16,lines:['03']}, secretPit:{n:0,x0:1560,x1:1635}, secRet:{0:1700},
   tides:[{x:1385,w:110,per:4.0,on:1.5,ph:0}], // v7: a tide flat the sea covers on a beat
-  trig:[{x:40,line:'01',delay:1.2},{x:560,line:'02'},{x:100,hint:'lives',ttl:6},{x:400,hint:'jump',ttl:5},{x:860,hint:'shine',ttl:7},{x:2780,hint:'offer',ttl:8}],
+  trig:[{x:40,line:'01',delay:1.2},{x:560,line:'02'},{x:100,hint:'lives',ttl:3.4},{x:400,hint:'jump',ttl:5},{x:860,hint:'shine',ttl:7},{x:2780,hint:'offer',ttl:8}],
  },1660,[
   // v6 Act 2, the conclusion: three pools, a Gorit between the first two (his shove is a fall), a wisp over the third
   [2250,760,{gaps:[[400,475],[630,705]],tides:[{x:95,w:120,per:3.8,on:1.5,ph:0.5}],enemies:[{t:'walker',spr:'gorit',x:300,r:40,h:74},{t:'wisp',x:550}],
@@ -574,7 +581,7 @@ const AREAS=[
  makeArea(v6(v5({key:'heart',num:'VII',title:'The Heart of Fantor',music:'heart',len:3100,dark:0.12,darkCol:'40,24,6',ground:['#7a5222','#2a1606'],rim:'#fff0b0',fg:'heart',
   imgs:[['s17',0],['s18',1300],['s19',2300]],waves:[[5,0.004,0],[3,0.012,0]],
   gaps:[[1300,1375]],
-  solids:[{x:2050,w:44,h:50,k:'rock',cover:1},{x:2420,w:320,h:26,k:'gold'},{x:2470,w:270,h:52,k:'gold'},{x:2520,w:220,h:78,k:'gold'},{x:2570,w:170,h:104,k:'gold'}], // v11.2: one stone in the King of Bell's arena. Crouch in its lee. It takes a few blows, then it is spent.
+  solids:[{x:2050,w:44,h:50,k:'rock',cover:1},{x:2420,w:320,h:26,k:'gold'},{x:2470,w:270,h:52,k:'gold'},{x:2520,w:220,h:78,k:'gold'},{x:2570,w:170,h:104,k:'gold'}], // v11.3: one stone in the King of Bell's arena. Crouch in its lee. It takes a few blows, then it is spent.
   plats:[{x:700,y:BASE-64,w:100,k:'shard'},{x:880,y:BASE-120,w:90,k:'shard'},{x:1500,y:BASE-30,w:80,k:'shard',my:110,per:5}],
   motes:[...row(200,4,40,24),...row(710,3,35,94),...row(890,3,30,150),...row(1100,4,40,24),...row(1505,2,40,170),...row(1650,4,40,24)],
   enemies:[{t:'wisp',x:600},{t:'walker',spr:'chroner',x:1050,r:110,h:88},{t:'wisp',x:1700}],
@@ -773,8 +780,9 @@ const HINTS={
 const game={stop:0,slowT:0,deaths:[],state:'loading',t:0,areaI:0,log:[],stats:{},flash:0,fade:0,shake:0,title:{a:0},cine:null,throne:null,ending:null,paused:false,lives:START_LIVES,lifeMotes:0,bossBanner:null,popups:[]};
 /*@DEV*/window.FANTOR=game;/*@/DEV*/
 const P={x:80,y:BASE,vx:0,vy:0,face:1,ground:true,coy:0,buf:0,walk:0,light:3,hurtT:0,plat:null,stepT:0,sit:0,glow:1,safeX:80,cp:80,ctrl:true,auto:AUTO,dead:0,shineCD:0,
-  dashT:0,dashCD:0,dashG:0,dashDir:1,carry:0,airDash:true,adT:0,adV:[0,0],pull:null,ember:false,stomp:false,kneel:0,inv:0,knockT:0};
+  dashT:0,dashCD:0,dashG:0,dashDir:1,carry:0,airDash:true,adT:0,adV:[0,0],pull:null,ember:false,stomp:false,kneel:0,inv:0,knockT:0,bumpT:0,bumpCd:0,bumpDir:1};
 game.moves=0; // v5: how many of the stones' gifts the wanderer carries (0-6)
+game.hintSeen={}; game.legendSeen=0; game.legendT=0; game.retry=false; game.titleDur=4; // v11.3: hints, the star legend and heard lines last the sitting
 function resetMoves(){ Object.assign(P,{dashT:0,dashCD:0,dashG:0,carry:0,airDash:true,adT:0,pull:null,ember:false,stomp:false,kneel:0,inv:0,knockT:0}); }
 game.night=false; game.splits=[]; game.actT=0; game.split=null; // v6
 // v6: the Long Night opens once the seven lights have gone home; best times are kept in this browser
@@ -831,7 +839,7 @@ function setupArea(i){
   camX=0; camY=0; game.bossBanner=null;
   playMusic(d.music);
   const keep=d.imgs.map(x=>x[0]); dropBands(keep); keep.forEach(bands);
-  game.areaTitle=4.0;
+  game.titleDur=game.retry?1.8:4; game.areaTitle=game.titleDur; // v11.3: the land card is shorter on a retry. The first walk keeps its 4s.
   game.log.push(['area',i,+game.t.toFixed(1)]);
   resetCover();
   setCP(70,true);
@@ -919,7 +927,7 @@ function downMove(inp){
 }
 function bounce(){ P.vy=-BOUNCE_V; P.stomp=false; P.airDash=true; P.inv=0.25; P.ground=false; P.plat=null; sfx.bounce(); game.shake=Math.max(game.shake,0.12);
   for(let i=0;i<10;i++){ const a=Math.PI*(0.1+0.8*i/9); A.particles.push({x:P.x,y:P.y,vx:Math.cos(a)*90,vy:Math.sin(a)*40,life:0.4,t:0,gold:1}); } }
-// v11.2: a jump landing on a small walker. Not a star-fall (that one costs light and works on anything).
+// v11.3: a jump landing on a small walker. Not a star-fall (that one costs light and works on anything).
 // Side-on is still a hit. Wisps, flyers, spitters, throwers, spears, stalkers and bosses are not stepped on.
 function headStomp(prevY,ny){
   let best=null;
@@ -961,6 +969,7 @@ function stepPull(dt){
 }
 function stepPlayer(dt,inp){
   const d=A.d;
+  if(P.bumpT>0) P.bumpT-=dt; if(P.bumpCd>0) P.bumpCd-=dt;
   if(P.inv>0) P.inv-=dt; if(P.dashCD>0) P.dashCD-=dt; if(P.dashG>0) P.dashG-=dt; if(P.knockT>0) P.knockT-=dt;
   if(P.shineCD>0) P.shineCD-=dt;
   if(P.pull){ if(P.hurtT>0) P.hurtT-=dt; stepPull(dt); return; }
@@ -988,6 +997,8 @@ function stepPlayer(dt,inp){
   if(P.plat&&P.ground){ P.x+=P.plat.dx; }
   let nx=P.x+P.vx*dt;
   if(blockedX(nx,P.y)) { if(game.night&&P.ground) for(const so of d.solids) if(so.hollow!==undefined&&Math.abs(nx-(P.vx>0?so.x-PW/2:so.x+so.w+PW/2))<8){ if(P.dashT>0&&enterSecret(so.hollow)){ game.shake=0.4; sfx.thud(); return; } if((A.tokT||0)<game.t){ A.tokT=game.t+1.2; sfx.tok(); } }
+    // v11.3: walking into a rock or a block. A bump and a short push, so a stop reads as the stone and not a stuck walk.
+    if(P.ground&&!P.dead&&Math.abs(P.vx)>36&&P.bumpCd<=0){ for(const so of d.solids) if(nx>so.x-PW/2&&nx<so.x+so.w+PW/2&&P.y>solidTop(so)+4){ P.bumpCd=0.55; P.bumpT=0.34; P.bumpDir=Math.sign(P.vx)||P.face||1; sfx.bump(); game.log.push(['bump',P.x|0]); break; } }
     nx=P.x; P.vx=0; P.carry=0; if(P.adT>0){ P.adV[0]=0; } }
   P.x=nx;
   const prev=P.y+(P.plat&&P.ground?P.plat.dy:0); let ny=P.y+P.vy*dt;
@@ -1167,7 +1178,11 @@ function hurt(src,amt){
   P.light=Math.max(0,P.light-amt);
   if(P.light<=1) say('g08');
 }
-function showHint(t,ttl){ A.hint=t; A.hintT=ttl; }
+function showHint(t,ttl,key){
+  // v11.3: the lives hint has the only slot. The jump hint waits it out instead of cutting it off.
+  if(A.hintKey==='lives'&&A.hintT>0.25){ A.hintWait={t,ttl,key:key||''}; return; }
+  A.hint=t; A.hintT=ttl; A.hintKey=key||''; A.hintWait=null;
+}
 function popup(t,x,y){ game.popups.push({t,x,y,life:1.6,a:0}); }
 
 /* ---------------- bosses ---------------- */
@@ -1457,6 +1472,8 @@ function update(dt){
   if(comboT>0){ comboT-=dt; if(comboT<=0) combo=0; }
   game.flash=Math.max(0,game.flash-dt*1.5);
   game.fade=Math.max(0,game.fade-dt*2.4);
+  if(game.legendT>0) game.legendT=Math.max(0,game.legendT-dt);
+  if(game.state==='play'&&!game.legendSeen){ if(game.lightMark===undefined) game.lightMark=P.light; else if(P.light!==game.lightMark){ game.legendSeen=1; game.legendT=4.6; } } // v11.3: the star row, the first time the light changes
   game.shake=Math.max(0,game.shake-dt);
   for(const p of game.popups){ p.life-=dt; p.y-=dt*30; } game.popups=game.popups.filter(p=>p.life>0);
   if(game.state==='title'){ game.title.a=Math.min(1,game.title.a+dt*0.5);
@@ -1465,7 +1482,7 @@ function update(dt){
     const no=nightOpen(), eo=emberOpen(), lo=tap&&tap.y>H*0.84;
     if(no&&(pressed.n||lo&&(!eo||tap.x<W/2))) startGame(false,true); else if(eo&&(pressed.er||lo)) startGame(false,false,true); else if(pressed.ok||pressed.j||pressed.s||tap) startGame(false,false); return; }
   if(game.state==='end'){ game.endT+=dt; if(game.endT>4&&(pressed.ok||pressed.j||tap)){ game.state='title'; game.title.a=0; playMusic('title'); } return; }
-  if(game.state==='gameover'){ game.goT+=dt; if(game.goT>3.0&&(pressed.ok||pressed.j||pressed.s||tap||(AUTO&&game.goT>7))) startGame(true,game.night,game.ember); return; }
+  if(game.state==='gameover'){ game.goT+=dt; if(game.goT>1.0&&(pressed.ok||pressed.j||pressed.s||tap||(AUTO&&game.goT>7))) startGame(true,game.night,game.ember); return; } // v11.3: a key skips after 1s. Lives and the restart are unchanged.
   if(game.state==='trans'){ game.transT+=dt; if(game.transT>1.2&&!game.transDone){ game.transDone=true; game.cine=null; if(game.transFn){ const fn=game.transFn; game.transFn=null; fn(); } else setupArea(game.nextArea); } if(game.transT>2.0) game.state='play'; if(A) updateWorld(dt,{}); return; }
   if(game.state!=='play') return;
   if(game.paused) return;
@@ -1481,7 +1498,7 @@ function update(dt){
   updateWorld(dt,inp);
 }
 function touchBox(x,y,h,hw){ return Math.abs(P.x-x)<hw&&P.y>y-h+6&&P.y-PH*PS<y; }
-// v11.2: crouch (hold Down, still, on the ground — the kneel) behind a tall rock.
+// v11.3: crouch (hold Down, still, on the ground — the kneel) behind a tall rock.
 // The stone has to be between you and the shot. Crouching in the open does nothing.
 // Rain, a charge, and the bell-pillars are not shots crossing the stone, so they still land.
 // The arena stone (cover:1) cracks, and after COVER_HITS caught blows it no longer shelters you.
@@ -1514,8 +1531,9 @@ function updateWorld(dt){
   if(game.bossBanner){ game.bossBanner.t+=dt; if(game.bossBanner.t>3.5) game.bossBanner=null; }
   game.look=(game.look||0)+((P.dead?0:P.face*28)-(game.look||0))*Math.min(1,dt*1.5); const tcx=clamp(P.x-W*0.36+game.look,0,d.len-W); camX+=(tcx-camX)*Math.min(1,dt*4);
   const tcy=Math.min(0,P.y-310); if(!P.dead) camY+=(tcy-camY)*Math.min(1,dt*3);
-  if(live) for(const t of A.trig){ if(!t.done&&P.x>=t.x){ t.done=true; if(t.line) say(t.line,{delay:t.delay||0}); if(t.hint) showHint(HINTS[t.hint](),t.ttl||5); } }
+  if(live) for(const t of A.trig){ if(!t.done&&P.x>=t.x){ t.done=true; if(t.line) say(t.line,{delay:t.delay||0}); if(t.hint&&!game.hintSeen[t.hint]){ game.hintSeen[t.hint]=1; showHint(HINTS[t.hint](),t.ttl||5,t.hint); if(t.hint==='shine'&&!game.legendSeen){ game.legendSeen=1; game.legendT=4.6; } } } }
   if(A.hintT>0) A.hintT-=dt;
+  else if(A.hintWait){ const w=A.hintWait; A.hintWait=null; showHint(w.t,w.ttl,w.key); }
   if(live&&A.act===1&&P.x>=d.act2) startAct2();
   if(game.actT>0) game.actT-=dt; if(game.split){ game.split.t+=dt; if(game.split.t>4.5) game.split=null; }
   for(const p of A.plats){
@@ -1636,7 +1654,7 @@ function updateWorld(dt){
     if(P.kneel>kq.t){ P.kneel=0; enterSecret(kq.n); } } else A.kneelT=0;
   // waystones and the folk who speak
   for(const w of A.ways){ if(!w.lit&&live&&P.x>=w.x){ w.lit=true; sfx.waystone(); setCP(w.x); popup('waystone',w.x,gyOr(w.x)-70); } }
-  for(const f of A.folk){ f.ph+=dt; const n=Math.abs(P.x-f.x)<170; f.near+=((n?1:0)-f.near)*Math.min(1,dt*3); if(!f.said&&live&&Math.abs(P.x-f.x)<120){ f.said=true; say(f.line); } }
+  for(const f of A.folk){ f.ph+=dt; const n=Math.abs(P.x-f.x)<170; f.near+=((n?1:0)-f.near)*Math.min(1,dt*3); if(!f.said&&live&&Math.abs(P.x-f.x)<(f.reach||120)){ f.said=true; say(f.line); } }
   for(const n of A.npcs){ n.x+=n.v*dt; n.ph+=dt*n.v/10; if(n.x>d.len+40) n.x=-40; }
   for(const l of A.lanterns) l.t+=dt; for(const b of A.braziers){ b.t+=dt; if(b.relight>0){ b.relight-=dt; if(b.relight<=0&&!b.lit){ b.lit=true; b.t=0; b.snuff=0; if(Math.abs(b.x-P.x)<W) sfx.lantern(); } } } // a fire you lose smoulders back in the brazier it came from
   if(A.shrine){ A.shrine.t+=dt; if(A.shrine.awake) A.veil=Math.max(0,A.veil-dt*0.5); }
@@ -1670,10 +1688,12 @@ function updateWorld(dt){
 function goArea(i){ game.state='trans'; game.transT=0; game.transDone=false; game.nextArea=i; P.ctrl=false; if(game.cine) game.cine.fadeOut=true; }
 function startGame(fresh,night,ember){
   const i=fresh?0:START_AREA;  // after a game over it is always the very beginning
+  game.retry=(game.runsThisSitting=(game.runsThisSitting||0)+1)>1; // v11.3: a later journey this sitting is a retry
+  if(!game.legendSeen) game.lightMark=undefined;
   if(night!==undefined) game.night=!!night; game.ember=!!ember&&!game.night; game.splits=[]; game.split=null; game.actT=0; game.fromStart=i===0; game.newBest=null;
   game.stats={motes:0,calmed:0,lanterns:0,given:0,shrines:0,start:game.t,falls:0,hits:0,lost:0,bosses:0,oneups:0};
   game.lives=game.ember?1:START_LIVES; game.lifeMotes=0; game.popups=[]; game.deaths=[]; game.stop=0; game.slowT=0; game.relics=new Set(); game.secretsSpent=new Set(); game.secretFrom=null; game.transFn=null;
-  vo.heard.clear(); vo.queue.length=0; game.throne=null; game.cine=null; game.ending=null;
+  vo.queue.length=0; game.throne=null; game.cine=null; game.ending=null; // v11.3: lines already heard this sitting stay heard. The game-over line uses again.
   P.light=i>=4?6:3; P.dead=0; P.fellT=0; game.moves=game.night?6:Math.min(6,i); resetMoves();
   for(let n=0;n<SECRETS.length;n++) if(!!SECRETS[n].night!==game.night) game.secretsSpent.add(n); // v7: the day's hidden places sleep through the Long Night, and the night's sleep by day
   bot.skip.clear();
@@ -2128,12 +2148,13 @@ const PS=1.3; // player sprite scale
 function drawPlayer(){ if(P.dead>0||P.fellT) return;
   const blink=P.hurtT>0.3&&((game.t*20)|0)%2===0; // the body still flashes; a contour stays so a large figure cannot erase you
   const q=P.sq||0;
+  const b=P.bumpT>0?Math.min(1,P.bumpT/0.34):0; // v11.3: a short lean and squash into the block
   if(!blink){ // v7: a scarf of light that trails as you move; brighter the more you carry
     const nx=P.x-P.face*3, ny=P.y-49+(P.sit?15:0), sp=Math.min(1.6,Math.abs(P.vx)/140), gl=Math.min(1,P.glow/1.6);
     cx.save(); cx.lineCap='round'; for(let k=0;k<2;k++){ cx.strokeStyle=k?`rgba(255,230,170,${0.25+0.45*gl})`:'rgba(60,30,16,0.85)'; cx.lineWidth=k?1.4:3.2; cx.beginPath(); cx.moveTo(nx,ny);
       for(let i=1;i<=6;i++) cx.lineTo(nx-P.face*i*(3.5+sp*2.5)-P.vx*0.012*i, ny+i*(1.6-sp*0.6)+Math.sin(game.t*7-i*0.9)*(0.8+sp*1.6)*i*0.4); cx.stroke(); } cx.restore(); }
-  cx.save(); cx.translate(P.x,P.y+1); if(!P.sit&&!(P.kneel>0.15)) cx.rotate(clamp(P.vx/SPD,-1.6,1.6)*(P.ground?0.05:0.035)); cx.scale(PS*(1+0.18*q),PS*(1-0.16*q));
-  const sit=P.sit||(P.kneel>0.15?1:0); // v11.2: holding Down on the ground is a crouch (the old kneel, lower)
+  cx.save(); cx.translate(P.x+(b?(P.bumpDir||P.face)*5*b:0),P.y+1+b*3); if(!P.sit&&!(P.kneel>0.15)) cx.rotate((b?(P.bumpDir||P.face)*0.22*b:0)+clamp(P.vx/SPD,-1.6,1.6)*(P.ground?0.05:0.035)); cx.scale(PS*(1+0.18*q)*(1+0.14*b),PS*(1-0.16*q)*(1-0.16*b));
+  const sit=P.sit||(P.kneel>0.15?1:0); // v11.3: holding Down on the ground is a crouch (the old kneel, lower)
   if(blink) drawFigure(cx,0,0,P.face,P.walk,0,{sit,ink:'rgba(255,228,186,0.95)',inkW:1.2});
   else drawFigure( /* v9: leans a touch into the run */cx,0,0,P.face,P.walk,P.glow,{sit});
   cx.restore();
@@ -2336,6 +2357,21 @@ function inkWash(x,y,w,h){ const r=Math.min(16,h*0.4); cx.save(); cx.fillStyle='
 function drawStar(x,y,R,a,col){ cx.save(); cx.translate(x,y); cx.globalAlpha=a; cx.lineJoin='round'; cx.beginPath();
   for(let k=0;k<8;k++){ const ang=k/8*TAU-Math.PI/2, r=k%2?R*0.42:R; cx.lineTo(Math.cos(ang)*r,Math.sin(ang)*r); }
   cx.closePath(); cx.lineWidth=3; cx.strokeStyle='rgba(12,4,1,0.95)'; cx.stroke(); cx.fillStyle=col; cx.fill(); cx.restore(); }
+// v11.3: the subtitle box sits on the water (one line ~436–468, the pit drawn from y 426).
+// Lift it above the ledge whenever a pit or a hazard is in that band. Same rule in every land.
+function subLift(){
+  if(!A) return false;
+  const d=A.d, L=camX+W*0.08-24, R=camX+W*0.92+24, over=(a,b)=>b>L&&a<R;
+  for(const g of d.gaps) if(over(g[0],g[1])) return true;
+  if(d.dyn) for(const g of d.dyn) if(over(g[0],g[1])) return true;
+  for(const h of d.hazards) if(h.x>L-16&&h.x<R+16) return true;
+  for(const t of d.tides||[]) if(over(t.x,t.x+t.w)&&(tideLevel(t)>0.02||tideSoon(t)<1.2)) return true;
+  return false;
+}
+function subBox(n,lift){
+  const h=n*22+10, top=lift?372-h:(H-28-(n-1)*22)-16;
+  return {top,h,bottom:top+h};
+}
 function drawHUD(){
   const n=Math.max(0,P.light); const x0=32,y0=46;
   const shines=Math.floor(n/SHINE_COST), rem=n%SHINE_COST;
@@ -2358,7 +2394,7 @@ function drawHUD(){
     else if(thin){ cx.strokeStyle='rgba(255,150,60,0.95)'; cx.lineWidth=3; cx.beginPath(); cx.arc(x0,y0,27,0,TAU); cx.stroke(); }
     const numCol=danger?'#ff4a32':thin?'#ffb15a':'#fff6e4';
     text(String(n),x0+30,y0-14,32,numCol,'left',danger?0.78+0.22*beat:1);
-    // v11.2: stars are shines the light will buy. Three seeds fill into the next one.
+    // v11.3: stars are shines the light will buy. Three seeds fill into the next one.
     const sx=x0+36, sy=y0+14, starCol=danger?'#ff5c3c':thin?'#ffc06a':'#fff3c8';
     if(!shines) drawStar(sx,sy,starR,danger?0.45+0.55*beat:0.55,starCol);
     for(let i=0;i<shown;i++) drawStar(sx+i*gap,sy,starR,1,'#fff6d4');
@@ -2367,9 +2403,22 @@ function drawHUD(){
       cx.beginPath(); cx.arc(dx,dy,3.4,0,TAU);
       cx.fillStyle=i<rem?(danger?'#ff6a48':thin?'#ffc278':'#fff1c4'):'rgba(255,220,170,0.16)'; cx.fill();
       cx.lineWidth=1.6; cx.strokeStyle=i<rem?'rgba(40,16,4,0.8)':'rgba(255,220,170,0.75)'; cx.stroke(); }
-    if(A.shrine&&!A.shrine.awake){ const line=`the stone ahead wants ${A.shrine.need}`;
-      cx.font='14px Georgia, serif'; const lw=Math.ceil(cx.measureText(line).width)+18;
-      inkWash(12,112,lw,26); text(line,22,125,14,'#ffe8c4','left',0.95); } // kept below the count, on its own wash
+    // v11.3: one short legend, the first time the light changes. Stars are shines left. Seeds are light toward the next.
+    const leg=game.legendT>0?Math.min(1,game.legendT*2.2,(4.6-game.legendT)*3):0;
+    if(leg>0.02){
+      const ly=108, cap='a shine left', cap2='light toward the next';
+      cx.font='13px Georgia, serif'; const w1=cx.measureText(cap).width, w2=cx.measureText(cap2).width;
+      inkWash(12,ly-13,36+w1+46+w2,26);
+      drawStar(28,ly,6,leg,'#fff6d4'); text(cap,40,ly,13,'#ffe8c4','left',leg);
+      const dx0=40+w1+14; for(let i=0;i<3;i++){ cx.beginPath(); cx.arc(dx0+i*9,ly,2.5,0,TAU); cx.fillStyle=`rgba(255,241,196,${leg})`; cx.fill(); }
+      text(cap2,dx0+32,ly,13,'#ffe8c4','left',leg);
+    }
+    if(A.shrine&&!A.shrine.awake){ const have=Math.max(0,P.light)|0, need=A.shrine.need, ready=have>=need;
+      const line=`stone  ${have} / ${need}  light`; // v11.3: the light you carry, and the light the stone wants
+      cx.font='14px Georgia, serif'; const lw=Math.ceil(cx.measureText(line).width)+28;
+      const sy2=leg>0.02?148:125; inkWash(12,sy2-13,lw,26);
+      cx.save(); cx.globalAlpha=0.95; cx.fillStyle=ready?'#fff6dc':'#ffd27a'; cx.beginPath(); cx.arc(24,sy2,4.2,0,TAU); cx.fill(); cx.fillStyle='#fff6dc'; cx.beginPath(); cx.arc(23.2,sy2-0.8,1.7,0,TAU); cx.fill(); cx.restore();
+      text(line,34,sy2,14,ready?'#fff6dc':'#ffe8c4','left',0.95); }
   }
   // lives: little suns, top right. One life left pulses. The light's own sun, not these, gutters when the next hit would take one.
   for(let i=0;i<Math.min(game.lives,MAX_LIVES);i++){ const lx2=W-26-i*24, ly=26; const lone=game.lives===1; const pr=lone?0.82+0.18*Math.sin(game.t*4):1;
@@ -2391,8 +2440,8 @@ function drawHUD(){
   if(A.hintT>0&&A.hint){ const a=Math.min(1,A.hintT)*Math.min(1,(game.t%1e9)>0?1:1); text(A.hint,W/2,64,15,'#ffe2b0','center',a); }
   if(game.areaTitle>0&&game.state==='play'){ const t=game.areaTitle; const a=Math.min(1,t)*Math.min(1,(4-t)*1.5); const d=A.d; if(d.num) text(actLine(d,1),W/2,H*0.34,18,'#ffd9a0','center',a*0.8); text(d.title,W/2,H*0.34+30,30,'#fff0d0','center',a); cardRule(a); }
   if(game.actT>0&&game.state==='play'){ const t=game.actT; const a=Math.min(1,t)*Math.min(1,(3.6-t)*1.5); const d=A.d; text(actLine(d,2),W/2,H*0.34,18,'#ffd9a0','center',a*0.8); text(d.title,W/2,H*0.34+30,30,'#fff0d0','center',a); cardRule(a); }
-  if(vo.subA>0.02&&vo.sub){ const ls=wrap(vo.sub,W*0.78,17); const by=H-28-(ls.length-1)*22; cx.save(); cx.globalAlpha=vo.subA*0.5; cx.fillStyle='#000'; cx.fillRect(W*0.08,by-16,W*0.84,ls.length*22+10); cx.restore();
-    ls.forEach((l,i)=>text(l,W/2,by+i*22,17,'#f4e6cc','center',vo.subA)); }
+  if(vo.subA>0.02&&vo.sub){ const ls=wrap(vo.sub,W*0.78,17); const box=subBox(ls.length,subLift()); cx.save(); cx.globalAlpha=vo.subA*0.5; cx.fillStyle='#000'; cx.fillRect(W*0.08,box.top,W*0.84,box.h); cx.restore();
+    ls.forEach((l,i)=>text(l,W/2,box.top+16+i*22,17,'#f4e6cc','center',vo.subA)); }
   if(game.throne&&game.throne.phase==='choose'){ const a=0.6+0.4*Math.sin(game.t*2);
     if(!game.throne.sat) text(touchMode?'⤒  sit on the throne':'↑  sit on the throne',W/2-170,H*0.2,17,'#ffe2b0','center',0.9);
     text(touchMode?'✦  let the light go':'X  let the light go',game.throne.sat?W/2:W/2+170,H*0.2,17,'#fff4d8','center',a); }
@@ -2460,7 +2509,7 @@ function drawTitle(){
     if(n&&n.runs) q.push(`long nights ${n.runs}`+(n.far?`     furthest  ${farLabel(n)}`:''));
     const e=r.ember; if(e&&e.runs) q.push(`ember runs ${e.runs}`+(e.far?`     furthest  ${farLabel(e)}`:'')); // v11
     if(q.length) text(q.join('          '),W/2,H*0.72+52,11,'rgba(255,222,190,0.62)','center',a); }
-  text('v11.2',W-10,H-13,9,'rgba(255,220,190,0.35)','right',a);
+  text('v11.3',W-10,H-13,9,'rgba(255,220,190,0.35)','right',a);
   if(dmAny()) text(touchMode?'tap here: where the light has gone out':'M  where the light has gone out',W-14,18,11,'rgba(255,222,190,0.6)','right',a);
   text(touchMode?'◀ ▶ walk    ⤒ jump    ⌄ crouch    ✦ shine':'← →  walk     ↑ jump     ↓ crouch     X  shine     Esc menu',W/2,H-32,13,'rgba(255,230,200,0.8)','center',a);
   text('a journey through the art of The Road to Fantor',W/2,H-13,10,'rgba(255,220,190,0.5)','center',a);
@@ -2495,7 +2544,7 @@ function cardCanvas(){ const C=document.createElement('canvas'); C.width=1200; C
   for(let i=0;i<cols;i++){ const x=100+cw*(i+0.5); T(i<7?AREAS[i].num:'Dusk',x,y0+36,20,'#ffd59a'); T(String(n[i]),x,y0+68,26,'#fff6e6'); }
   T(`this run: light gathered ${s.motes|0}, shadows calmed ${s.calmed|0}, old powers calmed ${s.bosses|0}`,600,y0+116,17,'#ffe6cc');
   T('AI-generated art, created and curated by Eh AyeC',600,610,15,'rgba(255,225,195,0.85)');
-  T('https://ehayec.itch.io/fantor-the-wanderers-light',600,638,16,'#ffcf9a'); T('v11.2',1185,660,11,'rgba(255,220,190,0.5)','right');
+  T('https://ehayec.itch.io/fantor-the-wanderers-light',600,638,16,'#ffcf9a'); T('v11.3',1185,660,11,'rgba(255,220,190,0.5)','right');
   return C; }
 function saveCard(){ if(!(game.state==='end'||game.state==='gameover')) return; let url; try{ url=cardCanvas().toDataURL('image/png'); }catch(_){ return; }
   const again=game.cardT&&game.t-game.cardT<8; game.cardT=game.t; game.cardN=(game.cardN|0)+1; let u=url;
@@ -2531,7 +2580,7 @@ function drawEnd(){
     ...(game.newBest?[['Best','a new best']]:game.oldBest?[['Best',fmtT(game.oldBest,1)]]:[])];
   rows.forEach(([k,v],i)=>{ const aa=clamp((t-2-i*0.4)/1,0,1)*cardA; text(k,W/2-12,H*0.38+i*25,16,'#ffdcae','right',aa); text(String(v),W/2+12,H*0.38+i*25,16,'#fff6e6','left',aa); });
   if(game.nightNew) text('The Long Night has begun. It waits on the title.',W/2,H-56,15,'#c8d4ff','center',clamp((t-6)/1.5,0,1)*cardA);
-  text("FANTOR: The Wanderer's Light  v11.2",W/2,H-10,9,'rgba(255,220,190,0.45)','center',a);
+  text("FANTOR: The Wanderer's Light  v11.3",W/2,H-10,9,'rgba(255,220,190,0.45)','center',a);
   if(t>4) text(touchMode?'Tap to return':'Press Enter to return',W/2,H-30,14,'#ffe8cc','center',0.5+0.4*Math.sin(t*2));
   drawCardBtn(t); // v11
 }
@@ -2587,9 +2636,9 @@ function drawGameOver(){
   const rows=[['Light gathered',s.motes],['Shadows calmed',s.calmed],['Old powers calmed',s.bosses||0],...(game.relics.size?[['Secrets',`${game.relics.size}/${game.night?3:DAYN}`]]:[]),...(game.runNo?[[game.ember?'Ember runs begun':game.night?'Long nights begun':'Journeys begun',game.runNo]]:[])];
   rows.forEach(([k,v],i)=>{ const aa=clamp((t-2.2-i*0.2)/0.6,0,1); text(k,W/2-12,H*0.66+i*22,14,'#ffd0a8','right',aa); text(String(v),W/2+12,H*0.66+i*22,14,'#fff0e0','left',aa); });
   text(game.night?'No continues. The long night begins again at the shore.':'No continues. The journey begins again at the shore.',W/2,H-56,14,'#ffd9b8','center',clamp((t-2.5)/1,0,1)*0.85);
-  if(t>3.0) text(touchMode?'Tap to begin again':'Press Enter to begin again',W/2,H-30,16,'#fff0dc','center',0.5+0.4*Math.sin(t*2.5));
+  if(t>1.0) text(touchMode?'Tap to begin again':'Press Enter to begin again',W/2,H-30,16,'#fff0dc','center',0.5+0.4*Math.sin(t*2.5));
   drawCardBtn(t); // v11
-  text("FANTOR: The Wanderer's Light  v11.2",W/2,H-10,9,'rgba(255,220,190,0.4)','center',a); // v10
+  text("FANTOR: The Wanderer's Light  v11.3",W/2,H-10,9,'rgba(255,220,190,0.4)','center',a); // v10
 }
 function drawLoading(){
   base(); cx.fillStyle='#050302'; cx.fillRect(0,0,W,H);
@@ -2642,11 +2691,14 @@ setInterval(()=>{ if(!ac) return; const cur=A?A.d.music:'title'; const nx=A&&ARE
   pause(){ this.mr&&this.mr.state==='recording'&&this.mr.pause(); }, resume(){ this.mr&&this.mr.state==='paused'&&this.mr.resume(); },
   stop(){ return new Promise(res=>{ this.mr.onstop=async()=>{ const b=new Blob(this.chunks,{type:'video/webm'}); const buf=new Uint8Array(await b.arrayBuffer()); let s=''; for(let i=0;i<buf.length;i+=0x8000) s+=String.fromCharCode.apply(null,buf.subarray(i,i+0x8000)); res(btoa(s)); }; this.mr.stop(); }); }
 };
-window.fantorTest={ deathPhrase, deathListLine, clusterMarks, backdropPlan, cardZone, cardLabel, dmGet, recGet,
+window.fantorTest={ deathPhrase, deathListLine, clusterMarks, backdropPlan, cardZone, cardLabel, dmGet, recGet, subLift, subBox,
   shines:()=>Math.floor(Math.max(0,P.light)/SHINE_COST),
   consts:()=>({START_LIVES,MAX_LIVES,GRAV,JV,SPD,PH,PW,SHINE_COST,LIGHT_CAP,COVER_H,COVER_HITS,HOP_V}),
   areas:()=>AREAS.map(a=>({key:a.key,imgs:a.imgs,gaps:a.gaps,len:a.len})),
-  nights:()=>NIGHT.map(a=>({key:a.key,imgs:a.imgs,gaps:a.gaps,len:a.len})) };
-window.fantorDebug={ cam:()=>[camX,camY], kill:()=>{ if(game.state==='play'&&!P.dead){ const g=GOD; GOD=false; loseLife('debug'); GOD=g; } }, setLives:(n)=>{ game.lives=n; }, god:(v)=>{ GOD=!!v; }, boss:()=>A&&A.boss&&{st:A.boss.st,hp:A.boss.hp,calm:A.boss.calm,x:Math.round(A.boss.x),phase:A.boss.phase,atk:A.boss.atk}, bossHp:(n)=>{ const B=A.boss; B.hp=n; while(B.phase<B.nph&&B.hp<=B.th[B.phase-1]) bossPhase(); }, deaths:()=>game.deaths, tp:(x,light)=>{ P.x=x; P.y=A.d.gy(x); P.vy=0; camX=clamp(x-W*0.36,0,A.d.len-W); for(const t of A.trig) if(t.x<x) { t.done=true; } for(const fo of A.folk) if(fo.x<x) fo.said=true; vo.queue.length=0; if(vo.cur){ try{ vo.cur.src&&vo.cur.src.stop(); }catch(_){} vo.cur.end=0; } if(light!==undefined) P.light=light; }, goArea, setLight:(n)=>{P.light=n;}, enterSecret, relics:()=>[...game.relics], giveRelics:(n)=>{ for(let i=0;i<n;i++) game.relics.add(i); }, areas:AREAS, nareas:NIGHT, act:()=>A&&A.act, night:()=>game.night, splits:()=>game.splits, store, moves:(n)=>{ if(n!==undefined) game.moves=n; return game.moves; }, P:()=>P, A:()=>A, state:()=>({act:A&&A.act,night:game.night,moves:game.moves,ember:!!P.ember,secret:A&&A.d.secret||0,relics:game.relics.size,audio:ac?ac.state:null,menu:menuOpen,rs:RS,cw:cv.width,ch:cv.height,state:game.state,area:game.areaI,x:Math.round(P.x),y:Math.round(P.y),light:P.light,lives:game.lives,dead:P.dead,stats:game.stats,throne:game.throne&&game.throne.phase,vo:vo.cur&&vo.cur.id,boss:A&&A.boss?{st:A.boss.st,hp:A.boss.hp,calm:A.boss.calm,phase:A.boss.phase}:null,shrine:A&&A.shrine?{need:A.shrine.need,awake:A.shrine.awake}:null}) };/*@/DEV*/
+  nights:()=>NIGHT.map(a=>({key:a.key,imgs:a.imgs,gaps:a.gaps,len:a.len})),
+  hint:()=>A&&{text:A.hint||'',key:A.hintKey||'',wait:A.hintWait?A.hintWait.key:'',ttl:A.hintT||0},
+  heard:()=>[...vo.heard], queue:()=>vo.queue.map(q=>q.id),
+  folk:()=>A?A.folk.map(f=>({name:f.name,x:f.x,said:!!f.said,reach:f.reach||120})):[] };
+window.fantorDebug={ cam:()=>[camX,camY], line:(id)=>{ if(!id){ vo.sub=''; vo.subA=0; vo.queue.length=0; if(vo.cur){ try{ vo.cur.src&&vo.cur.src.stop(); }catch(_){} vo.cur=null; } return; } vo.sub=LINES[id]||String(id); vo.subA=1; }, kill:()=>{ if(game.state==='play'&&!P.dead){ const g=GOD; GOD=false; loseLife('debug'); GOD=g; } }, setLives:(n)=>{ game.lives=n; }, god:(v)=>{ GOD=!!v; }, boss:()=>A&&A.boss&&{st:A.boss.st,hp:A.boss.hp,calm:A.boss.calm,x:Math.round(A.boss.x),phase:A.boss.phase,atk:A.boss.atk}, bossHp:(n)=>{ const B=A.boss; B.hp=n; while(B.phase<B.nph&&B.hp<=B.th[B.phase-1]) bossPhase(); }, deaths:()=>game.deaths, tp:(x,light)=>{ P.x=x; P.y=A.d.gy(x); P.vy=0; camX=clamp(x-W*0.36,0,A.d.len-W); for(const t of A.trig) if(t.x<x) { t.done=true; } for(const fo of A.folk) if(fo.x<x) fo.said=true; vo.queue.length=0; if(vo.cur){ try{ vo.cur.src&&vo.cur.src.stop(); }catch(_){} vo.cur.end=0; } if(light!==undefined) P.light=light; }, goArea, setLight:(n)=>{P.light=n;}, enterSecret, relics:()=>[...game.relics], giveRelics:(n)=>{ for(let i=0;i<n;i++) game.relics.add(i); }, areas:AREAS, nareas:NIGHT, act:()=>A&&A.act, night:()=>game.night, splits:()=>game.splits, store, moves:(n)=>{ if(n!==undefined) game.moves=n; return game.moves; }, P:()=>P, A:()=>A, state:()=>({act:A&&A.act,night:game.night,moves:game.moves,ember:!!P.ember,secret:A&&A.d.secret||0,relics:game.relics.size,audio:ac?ac.state:null,menu:menuOpen,rs:RS,cw:cv.width,ch:cv.height,state:game.state,area:game.areaI,x:Math.round(P.x),y:Math.round(P.y),light:P.light,lives:game.lives,dead:P.dead,stats:game.stats,throne:game.throne&&game.throne.phase,vo:vo.cur&&vo.cur.id,boss:A&&A.boss?{st:A.boss.st,hp:A.boss.hp,calm:A.boss.calm,phase:A.boss.phase}:null,shrine:A&&A.shrine?{need:A.shrine.need,awake:A.shrine.awake}:null}) };/*@/DEV*/
 requestAnimationFrame(frame);
 })();

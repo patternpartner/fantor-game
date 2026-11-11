@@ -63,7 +63,17 @@ function sourceChecks(){
   assert(SRC.includes('function gainLight'), 'collected light goes into the shine pool');
   assert(SRC.includes('function tryCover'), 'crouching behind a rock can cover a shot');
   assert(SRC.includes("k:'rock',cover:1"), 'the King of Bell arena has a cover stone');
-  assert(SRC.includes('v11.2') && !SRC.includes('v11.1'), 'the source is marked v11.2');
+  assert(SRC.includes('v11.3') && !SRC.includes('v11.2'), 'the source is marked v11.3');
+  assert(!SRC.includes('vo.heard.clear'), 'a retry keeps narration already heard this sitting');
+  assert(SRC.includes('again:true'), 'the game-over line can still be said again');
+  assert(SRC.includes('game.goT>1.0') && !SRC.includes('game.goT>3.0'), 'game over accepts a key after 1s');
+  assert(!SRC.includes('the stone ahead wants'), 'the stone line is no longer "the stone ahead wants"');
+  assert(SRC.includes('stone  ${have} / ${need}  light'), 'the stone counter is the light you carry over the light it wants');
+  assert(SRC.includes('a shine left') && SRC.includes('light toward the next'), 'the legend names the stars and the seeds');
+  assert(SRC.includes('reach:52'), "Gruff's line waits until you stand by him");
+  assert(SRC.includes('noteLayout') && SRC.includes('blurPauseAt'), 'a blur pause closes if a resize follows');
+  assert(SRC.includes('P.coy=P.ground?0.1:P.coy-dt') && SRC.includes('P.buf=inp.jp?0.13:P.buf-dt'), 'coyote time and the jump buffer are unchanged');
+  assert(SRC.includes('m.got=s.got[i]') && SRC.includes('P.light=s.light'), 'a death still restores checkpoint light and puts motes back');
 }
 
 async function boot(browser, gameFile){
@@ -483,7 +493,7 @@ async function prodChecks(browser){
   assert(!built.includes("Q.has('auto')") && !built.includes('has("auto")'), 'the shipped file has no autopilot switch');
   assert(built.includes('was struck') && !built.includes('struck down'), 'the shipped card says "was struck"');
   assert(built.includes('lights out') && !built.includes('all journeys'), 'the shipped strip says "lights out"');
-  assert(built.includes('v11.2') && !built.includes('v11.1'), 'the shipped build is marked v11.2');
+  assert(built.includes('v11.3') && !built.includes('v11.2'), 'the shipped build is marked v11.3');
   const { page, errors } = await boot(browser, 'game.js');
   await page.waitForFunction(() => {
     const c = document.getElementById('game');
@@ -492,6 +502,109 @@ async function prodChecks(browser){
   }, { timeout: 30000 });
   assert(errors.length===0, 'the shipped build reaches the title with no errors ('+(errors[0]||'none')+')');
   assert(await page.evaluate(() => window.fantorDebug===undefined && window.fantorTest===undefined), 'debug objects are absent on the title');
+  await page.close();
+}
+
+async function clarityChecks(browser){
+  console.log('v11.3 clarity');
+  const { page, errors } = await boot(browser);
+  await page.setViewport({ width: 1100, height: 700, deviceScaleFactor: 1 });
+  await page.waitForFunction(() => window.fantorDebug && window.FANTOR && window.FANTOR.state!=='loading', { timeout: 30000 });
+  await page.focus('canvas#game');
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(() => window.FANTOR.state==='play', { timeout: 10000 });
+  const opened = await page.evaluate(() => ({
+    title: window.FANTOR.titleDur, lives: window.FANTOR.lives,
+    low: window.fantorTest.subBox(1, false), high: window.fantorTest.subBox(2, true)
+  }));
+  assert(opened.title===4 && opened.lives===3, 'the first land card is still 4s and the journey still starts with 3 lives');
+  assert(opened.low.bottom>420 && opened.high.bottom<=372 && opened.high.bottom<392, 'a lifted subtitle ends above the ledge (bottom '+opened.high.bottom+')');
+
+  await page.evaluate(() => {
+    const d = window.fantorDebug, P = d.P(), A = d.A();
+    P.x = 180; P.vx = 0; P.vy = 0; P.y = A.d.gy(180); P.ground = true;
+  });
+  await sleep(200);
+  const early = await page.evaluate(() => window.fantorTest.folk().find(f => f.name==='Gruff'));
+  assert(early && !early.said && early.reach===52, 'Gruff does not speak before you reach him');
+  await page.evaluate(() => {
+    const d = window.fantorDebug, P = d.P();
+    P.x = 208; P.vx = 0; P.y = d.A().d.gy(208); P.ground = true;
+  });
+  await sleep(250);
+  const byHim = await page.evaluate(() => ({ folk: window.fantorTest.folk().find(f => f.name==='Gruff'), heard: window.fantorTest.heard().includes('n01') }));
+  assert(byHim.folk && byHim.folk.said && byHim.heard, 'Gruff speaks once you are standing by him');
+
+  await page.evaluate(() => {
+    const d = window.fantorDebug, P = d.P();
+    P.x = 450; P.vx = 0; P.y = d.A().d.gy(450); P.ground = true;
+  });
+  await sleep(120);
+  const hint = await page.evaluate(() => window.fantorTest.hint());
+  assert(hint && hint.key==='lives' && hint.wait==='jump', 'the jump hint waits until the lives hint is done ('+JSON.stringify(hint)+')');
+
+  await page.evaluate(() => window.fantorDebug.tp(700));
+  await sleep(400);
+  const pit = await page.evaluate(() => ({ lift: window.fantorTest.subLift(), box: window.fantorTest.subBox(2, window.fantorTest.subLift()) }));
+  assert(pit.lift && pit.box.bottom<=372, 'the first pit lifts the subtitle above the water (bottom '+pit.box.bottom+')');
+
+  await page.evaluate(() => { const d=window.fantorDebug; d.tp(490); const P=d.P(); P.vx=0; P.ground=true; P.y=d.A().d.gy(490); });
+  await sleep(80);
+  await page.keyboard.down('ArrowRight');
+  let bumps = 0;
+  for(let i=0;i<25;i++){
+    await sleep(40);
+    bumps = await page.evaluate(() => window.FANTOR.log.filter(r => r[0]==='bump').length);
+    if(bumps>0) break;
+  }
+  await page.keyboard.up('ArrowRight');
+  const bumped = await page.evaluate(() => ({ n: window.FANTOR.log.filter(r => r[0]==='bump').length, pose: window.fantorDebug.P().bumpT>0 || window.FANTOR.log.some(r => r[0]==='bump') }));
+  assert(bumped.n>=1, 'walking into the shore rock bumps ('+bumped.n+')');
+
+  await page.evaluate(() => window.fantorDebug.goArea(7));
+  await page.waitForFunction(() => window.FANTOR.state==='play' && window.fantorDebug.state().area===7, { timeout: 10000 });
+  await sleep(300);
+  assert(await page.evaluate(() => window.fantorTest.subLift()===false), 'Dusk has no pit, so the subtitle stays low');
+
+  await page.evaluate(() => window.fantorDebug.goArea(1));
+  await page.waitForFunction(() => window.FANTOR.state==='play' && window.fantorDebug.state().area===1, { timeout: 10000 });
+  await page.evaluate(() => {
+    const g = window.fantorDebug.A().d.gaps[0];
+    window.fantorDebug.tp(g[0]-30);
+    window.fantorDebug.P().ground = true;
+  });
+  await sleep(400);
+  assert(await page.evaluate(() => window.fantorTest.subLift()===true), 'a forest pit lifts the subtitle too');
+
+  const heardBefore = await page.evaluate(() => window.fantorTest.heard().includes('01'));
+  assert(heardBefore, 'the opening line was heard on the first run');
+  await page.evaluate(() => { window.FANTOR.state='gameover'; window.FANTOR.goArea=0; window.FANTOR.goT=-4; });
+  await page.focus('canvas#game');
+  await page.keyboard.press('Enter');
+  await sleep(80);
+  assert(await page.evaluate(() => window.FANTOR.state==='gameover'), 'game over ignores a key in the first second');
+  await page.evaluate(() => { window.FANTOR.goT=1.05; });
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(() => window.FANTOR.state==='play', { timeout: 10000 });
+  const retry = await page.evaluate(() => ({
+    title: window.FANTOR.titleDur, lives: window.FANTOR.lives,
+    heard: window.fantorTest.heard().includes('01'),
+    queued: window.fantorTest.queue().includes('01'),
+    ember: !!window.FANTOR.ember
+  }));
+  assert(retry.title===1.8 && retry.lives===3 && retry.ember===false, 'a retry shortens the land card and still gives 3 lives (card '+retry.title+', lives '+retry.lives+')');
+  assert(retry.heard && !retry.queued, 'the opening line does not play again on the retry');
+
+  await page.evaluate(() => window.dispatchEvent(new Event('blur')));
+  await sleep(40);
+  assert(await page.evaluate(() => window.fantorDebug.state().menu===true), 'leaving the window pauses');
+  await page.evaluate(() => window.dispatchEvent(new Event('resize')));
+  await sleep(40);
+  assert(await page.evaluate(() => window.fantorDebug.state().menu===false), 'a resize just after the blur closes that pause');
+  await page.evaluate(() => window.dispatchEvent(new Event('blur')));
+  await sleep(700);
+  assert(await page.evaluate(() => window.fantorDebug.state().menu===true), 'a blur with no resize stays paused');
+  assert(errors.length===0, 'no page errors in the clarity checks ('+(errors[0]||'none')+')');
   await page.close();
 }
 
@@ -506,6 +619,7 @@ async function prodChecks(browser){
   try {
     await browserChecks(browser);
     await playChecks(browser);
+    await clarityChecks(browser);
     await prodChecks(browser);
   } finally {
     await browser.close();
