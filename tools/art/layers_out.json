@@ -1,0 +1,817 @@
+{
+ "s01": {
+  "t_mid": 0.25,
+  "t_near": 0.609,
+  "auto": [
+   0.25,
+   0.609375
+  ],
+  "feather": 0.04,
+  "layers": 3,
+  "note": "",
+  "fill_note": "",
+  "fill": {
+   "L0": "lama",
+   "L1": "lama"
+  },
+  "boxes": {
+   "L0": [
+    0,
+    0,
+    1920,
+    1080
+   ],
+   "L1": [
+    0,
+    0,
+    1920,
+    1080
+   ],
+   "L2": [
+    0,
+    0,
+    1920,
+    1080
+   ]
+  },
+  "cover": {
+   "mid": 0.6073657274246216,
+   "near": 0.4744007885456085
+  }
+ },
+ "s02": {
+  "t_mid": 0.391,
+  "t_near": 0.55,
+  "auto": [
+   0.390625,
+   0.828125
+  ],
+  "feather": 0.04,
+  "layers": 2,
+  "note": "hood and glowing face kept as one figure (auto split the face from the hood)",
+  "fill_note": "",
+  "fill": {
+   "L0": "lama",
+   "L1": "none (2-layer: near layer is the painting itself, mid file not used)"
+  },
+  "boxes": {
+   "L0": [
+    0,
+    0,
+    1920,
+    1080
+   ],
+   "L1": null,
+   "L2": [
+    27,
+    0,
+    1893,
+    1080
+   ]
+  },
+  "cover": {
+   "mid": 0.5037997961044312,
+   "near": 0.5037997961044312
+  }
+ },
+ "s03": {
+  "t_mid": 0.25,
+  "t_near": 0.609,
+  "auto": [
+   0.25,
+   0.609375
+  ],
+  "feather": 0.04,
+  "layers": 3,
+  "note": "",
+  "fill_note": "",
+  "fill": {
+   "L0": "lama",
+   "L1": "lama"
+  },
+  "boxes": {
+   "L0": [
+    0,
+    0,
+    1920,
+    1080
+   ],
+   "L1": [
+    0,
+    164,
+    1920,
+    916
+   ],
+   "L2": [
+    0,
+    808,
+    1920,
+    272
+   ]
+  },
+  "cover": {
+   "mid": 0.5130612850189209,
+   "near": 0.17938494682312012
+  }
+ },
+ "s04": {
+  "t_mid": 0.281,
+  "t_near": 0.3,
+  "auto": [
+   0.28125,
+   0.640625
+  ],
+  "feather": 0.04,
+  "layers": 2,
+  "note": "giant's feet and the ground they stand on kept in one layer, so the feet never slide on the sand",
+  "fill_note": "",
+  "fill": {
+   "L0": "lama",
+   "L1": "none (2-layer: near layer is the painting itself, mid file not used)"
+  },
+  "boxes": {
+   "L0": [
+    0,
+    0,
+    1920,
+    1080
+   ],
+   "L1": null,
+   "L2": [
+    0,
+    0,
+    1920,
+    1080
+   ]
+  },
+  "cover": {
+   "mid": 0.7335358262062073,
+   "near": 0.7335358262062073
+  }
+ },
+ "s05": {
+  "t_mid": 0.266,
+  "t_near": 0.578,
+  "auto": [
+   0.265625,
+   0.578125
+  ],
+  "feather": 0.04,
+  "layers": 3,
+  "note": "",
+  "fill_note": "LaMa drew a ghost of the small figure above it on the path; far layer uses Telea",
+  "fill": {
+   "L0": "telea",
+   "L1": "lama"
+  },
+  "boxes": {
+   "L0": [
+    0,
+    0,
+    1920,
+    1080
+   ],
+   "L1": [
+    0,
+    0,
+    1920,
+    1080
+   ],
+   "L2": [
+    0,
+    635,
+    1920,
+    445
+   ]
+  },
+  "cover": {
+   "mid": 0.5158897638320923,
+   "near": 0.20276251435279846
+  }
+ },
+ "s06": {
+  "t_mid": 0.281,
+  "t_near": 0.547,
+  "auto": [
+   0.28125,
+   0.546875
+  ],
+  "feather": 0.04,
+  "layers": 3,
+  "note": "",
+  "fill_note": "",
+  "fill": {
+   "L0": "lama",
+   "L1": "lama"
+  },
+  "boxes": {
+   "L0": [
+    0,
+    0,
+    1920,
+    1080
+   ],
+   "L1": [
+    0,
+    0,
+    1920,
+    1080
+   ],
+   "L2": [
+    0,
+    644,
+    1920,
+    436
+   ]
+  },
+  "cover": {
+   "mid": 0.4671529233455658,
+   "near": 0.1654391586780548
+  }
+ },
+ "s07": {
+  "t_mid": 0.141,
+  "t_near": 0.438,
+  "auto": [
+   0.140625,
+   0.4375
+  ],
+  "feather": 0.04,
+  "layers": 3,
+  "note": "",
+  "fill_note": "",
+  "fill": {
+   "L0": "lama",
+   "L1": "lama"
+  },
+  "boxes": {
+   "L0": [
+    0,
+    0,
+    1920,
+    1080
+   ],
+   "L1": [
+    0,
+    0,
+    1920,
+    1080
+   ],
+   "L2": [
+    65,
+    304,
+    1855,
+    776
+   ]
+  },
+  "cover": {
+   "mid": 0.46439436078071594,
+   "near": 0.19751493632793427
+  }
+ },
+ "s08": {
+  "t_mid": 0.25,
+  "t_near": 0.609,
+  "auto": [
+   0.25,
+   0.609375
+  ],
+  "feather": 0.04,
+  "layers": 3,
+  "note": "tower spire: thin-feature guard",
+  "fill_note": "",
+  "fill": {
+   "L0": "lama",
+   "L1": "lama"
+  },
+  "boxes": {
+   "L0": [
+    0,
+    0,
+    1920,
+    1080
+   ],
+   "L1": [
+    0,
+    0,
+    1920,
+    1080
+   ],
+   "L2": [
+    0,
+    568,
+    1920,
+    512
+   ]
+  },
+  "cover": {
+   "mid": 0.6368558406829834,
+   "near": 0.19185127317905426
+  }
+ },
+ "s09": {
+  "t_mid": 0.203,
+  "t_near": 0.531,
+  "auto": [
+   0.203125,
+   0.53125
+  ],
+  "feather": 0.04,
+  "layers": 3,
+  "note": "",
+  "fill_note": "LaMa invented translucent half-figures in the crowd bands; both fills use Telea",
+  "fill": {
+   "L0": "telea",
+   "L1": "telea"
+  },
+  "boxes": {
+   "L0": [
+    0,
+    0,
+    1920,
+    1080
+   ],
+   "L1": [
+    0,
+    386,
+    1920,
+    694
+   ],
+   "L2": [
+    0,
+    680,
+    1920,
+    400
+   ]
+  },
+  "cover": {
+   "mid": 0.49051934480667114,
+   "near": 0.26838818192481995
+  }
+ },
+ "s10": {
+  "t_mid": 0.281,
+  "t_near": 0.625,
+  "auto": [
+   0.28125,
+   0.625
+  ],
+  "feather": 0.04,
+  "layers": 3,
+  "note": "sun rays stay in the far layer by auto thresholds; crowd is the near band",
+  "fill_note": "LaMa filled under the crowd with a mottled texture with green/red speckle; mid layer uses Telea",
+  "fill": {
+   "L0": "lama",
+   "L1": "telea"
+  },
+  "boxes": {
+   "L0": [
+    0,
+    0,
+    1920,
+    1080
+   ],
+   "L1": [
+    0,
+    0,
+    1920,
+    1080
+   ],
+   "L2": [
+    0,
+    901,
+    1920,
+    179
+   ]
+  },
+  "cover": {
+   "mid": 0.24846428632736206,
+   "near": 0.132250115275383
+  }
+ },
+ "s11": {
+  "t_mid": 0.188,
+  "t_near": 0.531,
+  "auto": [
+   0.1875,
+   0.53125
+  ],
+  "feather": 0.04,
+  "layers": 3,
+  "note": "banner poles: thin-feature guard",
+  "fill_note": "",
+  "fill": {
+   "L0": "lama",
+   "L1": "lama"
+  },
+  "boxes": {
+   "L0": [
+    0,
+    0,
+    1920,
+    1080
+   ],
+   "L1": [
+    0,
+    30,
+    1920,
+    1050
+   ],
+   "L2": [
+    0,
+    729,
+    1920,
+    351
+   ]
+  },
+  "cover": {
+   "mid": 0.4914504289627075,
+   "near": 0.16106945276260376
+  }
+ },
+ "s12": {
+  "t_mid": 0.297,
+  "t_near": 0.562,
+  "auto": [
+   0.296875,
+   0.5625
+  ],
+  "feather": 0.04,
+  "layers": 3,
+  "note": "",
+  "fill_note": "",
+  "fill": {
+   "L0": "lama",
+   "L1": "lama"
+  },
+  "boxes": {
+   "L0": [
+    0,
+    0,
+    1920,
+    1080
+   ],
+   "L1": [
+    0,
+    0,
+    1920,
+    1080
+   ],
+   "L2": [
+    0,
+    0,
+    1920,
+    1080
+   ]
+  },
+  "cover": {
+   "mid": 0.6051995158195496,
+   "near": 0.17864872515201569
+  }
+ },
+ "s13": {
+  "t_mid": 0.3,
+  "t_near": 0.43,
+  "auto": [
+   0.3125,
+   0.546875
+  ],
+  "feather": 0.03,
+  "layers": 3,
+  "note": "raised sword kept whole with the figure; rays behind stay far",
+  "fill_note": "",
+  "fill": {
+   "L0": "lama",
+   "L1": "lama"
+  },
+  "boxes": {
+   "L0": [
+    0,
+    0,
+    1920,
+    1080
+   ],
+   "L1": [
+    0,
+    0,
+    1920,
+    1080
+   ],
+   "L2": [
+    0,
+    0,
+    1920,
+    1080
+   ]
+  },
+  "cover": {
+   "mid": 0.6714730262756348,
+   "near": 0.48087969422340393
+  }
+ },
+ "s14": {
+  "t_mid": 0.234,
+  "t_near": 0.516,
+  "auto": [
+   0.234375,
+   0.515625
+  ],
+  "feather": 0.04,
+  "layers": 3,
+  "note": "",
+  "fill_note": "LaMa repeated the near spear as a second spear; mid layer uses Telea",
+  "fill": {
+   "L0": "lama",
+   "L1": "telea"
+  },
+  "boxes": {
+   "L0": [
+    0,
+    0,
+    1920,
+    1080
+   ],
+   "L1": [
+    0,
+    0,
+    1920,
+    1080
+   ],
+   "L2": [
+    0,
+    391,
+    1920,
+    689
+   ]
+  },
+  "cover": {
+   "mid": 0.5009213089942932,
+   "near": 0.2389499694108963
+  }
+ },
+ "s15": {
+  "t_mid": 0.25,
+  "t_near": 0.45,
+  "auto": [
+   0.3125,
+   0.59375
+  ],
+  "feather": 0.04,
+  "layers": 3,
+  "note": "both standing figures and the antler branches kept whole in the near layer (auto cut the second figure and the antler tips)",
+  "fill_note": "",
+  "fill": {
+   "L0": "lama",
+   "L1": "lama"
+  },
+  "boxes": {
+   "L0": [
+    0,
+    0,
+    1920,
+    1080
+   ],
+   "L1": [
+    0,
+    0,
+    1920,
+    1080
+   ],
+   "L2": [
+    0,
+    0,
+    1920,
+    1080
+   ]
+  },
+  "cover": {
+   "mid": 0.6763055920600891,
+   "near": 0.2744074761867523
+  }
+ },
+ "s16": {
+  "t_mid": 0.219,
+  "t_near": 0.5,
+  "auto": [
+   0.21875,
+   0.5
+  ],
+  "feather": 0.04,
+  "layers": 3,
+  "note": "",
+  "fill_note": "",
+  "fill": {
+   "L0": "lama",
+   "L1": "lama"
+  },
+  "boxes": {
+   "L0": [
+    0,
+    0,
+    1920,
+    1080
+   ],
+   "L1": [
+    0,
+    0,
+    1920,
+    1080
+   ],
+   "L2": [
+    0,
+    207,
+    1920,
+    873
+   ]
+  },
+  "cover": {
+   "mid": 0.6324282884597778,
+   "near": 0.3490620255470276
+  }
+ },
+ "s17": {
+  "t_mid": 0.391,
+  "t_near": 0.8,
+  "auto": [
+   0.390625,
+   0.703125
+  ],
+  "feather": 0.05,
+  "layers": 2,
+  "note": "radiating rays kept entirely in the far layer (auto cut through them); only the crystal is near",
+  "fill_note": "",
+  "fill": {
+   "L0": "lama",
+   "L1": "none (2-layer: near layer is the painting itself, mid file not used)"
+  },
+  "boxes": {
+   "L0": [
+    0,
+    0,
+    1920,
+    1080
+   ],
+   "L1": null,
+   "L2": [
+    689,
+    233,
+    1231,
+    847
+   ]
+  },
+  "cover": {
+   "mid": 0.16605916619300842,
+   "near": 0.16605916619300842
+  }
+ },
+ "s18": {
+  "t_mid": 0.359,
+  "t_near": 0.56,
+  "auto": [
+   0.359375,
+   0.671875
+  ],
+  "feather": 0.03,
+  "layers": 2,
+  "note": "arch and pillars near; portal, figures and light rays far, so the rays are never cut",
+  "fill_note": "",
+  "fill": {
+   "L0": "lama",
+   "L1": "none (2-layer: near layer is the painting itself, mid file not used)"
+  },
+  "boxes": {
+   "L0": [
+    0,
+    0,
+    1920,
+    1080
+   ],
+   "L1": null,
+   "L2": [
+    0,
+    0,
+    1920,
+    1080
+   ]
+  },
+  "cover": {
+   "mid": 0.5506424903869629,
+   "near": 0.5506424903869629
+  }
+ },
+ "s19": {
+  "t_mid": 0.297,
+  "t_near": 0.672,
+  "auto": [
+   0.296875,
+   0.671875
+  ],
+  "feather": 0.04,
+  "layers": 3,
+  "note": "",
+  "fill_note": "",
+  "fill": {
+   "L0": "lama",
+   "L1": "lama"
+  },
+  "boxes": {
+   "L0": [
+    0,
+    0,
+    1920,
+    1080
+   ],
+   "L1": [
+    0,
+    45,
+    1920,
+    1035
+   ],
+   "L2": [
+    0,
+    76,
+    1920,
+    1004
+   ]
+  },
+  "cover": {
+   "mid": 0.6224334836006165,
+   "near": 0.47391384840011597
+  }
+ },
+ "s22": {
+  "t_mid": 0.219,
+  "t_near": 0.562,
+  "auto": [
+   0.21875,
+   0.5625
+  ],
+  "feather": 0.04,
+  "layers": 3,
+  "note": "",
+  "fill_note": "",
+  "fill": {
+   "L0": "lama",
+   "L1": "lama"
+  },
+  "boxes": {
+   "L0": [
+    0,
+    0,
+    1920,
+    1080
+   ],
+   "L1": [
+    0,
+    0,
+    1920,
+    1080
+   ],
+   "L2": [
+    0,
+    66,
+    1920,
+    1014
+   ]
+  },
+  "cover": {
+   "mid": 0.5994409322738647,
+   "near": 0.31993401050567627
+  }
+ },
+ "s23": {
+  "t_mid": 0.188,
+  "t_near": 0.8,
+  "auto": [
+   0.1875,
+   0.609375
+  ],
+  "feather": 0.08,
+  "layers": 2,
+  "note": "pier and nearest water near; sea and the sun's reflection far, wide feather so the reflection does not tear",
+  "fill_note": "",
+  "fill": {
+   "L0": "lama",
+   "L1": "none (2-layer: near layer is the painting itself, mid file not used)"
+  },
+  "boxes": {
+   "L0": [
+    0,
+    0,
+    1920,
+    1080
+   ],
+   "L1": null,
+   "L2": [
+    705,
+    676,
+    1215,
+    404
+   ]
+  },
+  "cover": {
+   "mid": 0.061024751514196396,
+   "near": 0.061024751514196396
+  }
+ }
+}
