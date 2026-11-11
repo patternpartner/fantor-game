@@ -1,4 +1,4 @@
-FANTOR - The Wanderer's Light (v11.3)
+FANTOR - The Wanderer's Light (v11.4)
 A punishing old-school platformer set in the world of "The Road to Fantor". Every backdrop and
 character comes from Eh AyeC's "Fantor's Long War" collection: AI-generated images, created and
 curated by the artist (see CHARACTERS.md). The code was written with an AI coding assistant.
@@ -97,6 +97,22 @@ KEEP THIS CARD
   journeys, furthest, where the light has gone out, and a small honest credit. On a phone the line says to tap it.
   The walking buttons step aside on those screens so the tap can land. If your browser or the embed does not
   allow the download, press G (or tap) again within a few seconds and it opens in a new tab instead.
+
+v11.4:
+  - A second ending in the same sitting no longer freezes at the throne or the bench. The story and
+    ending lines play again, and a heard line that is skipped still runs the action tied to it.
+  - A subtitle lifts only for a gap or a hazard just ahead, and only once per line. Lifted, it sits
+    in a band under the hint line, and drops a little while the legend is up.
+  - Itch's fullscreen control still pauses, but the menu closes and a "click to continue" veil stays
+    until the frame is clicked, focused, or keyed. Leaving the tab still opens the menu.
+  - A folk line waits for a free queue and for you to still be near. A place-tied line expires if you
+    are more than 600px past where it was triggered. The legend waits out a hint and a nearby gap.
+    A boss's introduction plays once a sitting; the banner and the roar still happen every wake.
+  - On a phone, holding jump no longer aims a light-dash upward. A second press of jump, held, does.
+  - The land card fades in on a short retry, and "retry" is per land. The Ember Run's lives hint says
+    one light. Two control hints can wait, and a situation hint does not erase them. A bump leans
+    away from the rock, including a slow one, once per contact.
+  - Lives, restart points, coyote time and motes on a death are unchanged. No new art or audio.
 
 v11.3:
   - Subtitles lift above the ledge whenever a pit or a hazard is in that band, in every land, so the box
